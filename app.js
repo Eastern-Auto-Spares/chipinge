@@ -1,0 +1,719 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  browserLocalPersistence,
+  setPersistence
+} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  getDoc,
+  setDoc,
+  doc,
+  query,
+  orderBy,
+  serverTimestamp,
+  runTransaction
+} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+import { demoParts, getCategoryGradient } from "./parts-data.js";
+import { runEasternAISearch } from "./easternai.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDP7TqLDVxV6xSQRVJyESZSrAHtirIP5wk",
+  authDomain: "easternautospares-25e32.firebaseapp.com",
+  projectId: "easternautospares-25e32",
+  storageBucket: "easternautospares-25e32.firebasestorage.app",
+  messagingSenderId: "504628520496",
+  appId: "1:504628520496:web:a1b8f7645abb9c2d4caff5",
+  measurementId: "G-H2G3L7LGQ2"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const els = {
+  searchInput: document.getElementById("searchInput"),
+  searchBtn: document.getElementById("searchBtn"),
+  categoryFilter: document.getElementById("categoryFilter"),
+  vehicleFilter: document.getElementById("vehicleFilter"),
+  sortFilter: document.getElementById("sortFilter"),
+  productsGrid: document.getElementById("productsGrid"),
+  emptyProductsState: document.getElementById("emptyProductsState"),
+  resultCount: document.getElementById("resultCount"),
+  cartItems: document.getElementById("cartItems"),
+  emptyCartState: document.getElementById("emptyCartState"),
+  navCartCount: document.getElementById("navCartCount"),
+  navCartTotal: document.getElementById("navCartTotal"),
+  checkoutCartCount: document.getElementById("checkoutCartCount"),
+  summaryItems: document.getElementById("summaryItems"),
+  summaryTotal: document.getElementById("summaryTotal"),
+  clearCartBtn: document.getElementById("clearCartBtn"),
+  placeOrderBtn: document.getElementById("placeOrderBtn"),
+  whatsAppBtn: document.getElementById("whatsAppBtn"),
+  orderStatus: document.getElementById("orderStatus"),
+  customerName: document.getElementById("customerName"),
+  customerPhone: document.getElementById("customerPhone"),
+  customerLocation: document.getElementById("customerLocation"),
+  customerNotes: document.getElementById("customerNotes"),
+  openAuthBtn: document.getElementById("openAuthBtn"),
+  closeAuthBtn: document.getElementById("closeAuthBtn"),
+  authModal: document.getElementById("authModal"),
+  authForm: document.getElementById("authForm"),
+  authStatus: document.getElementById("authStatus"),
+  authModalTitle: document.getElementById("authModalTitle"),
+  authSubmitBtn: document.getElementById("authSubmitBtn"),
+  loginTabBtn: document.getElementById("loginTabBtn"),
+  signupTabBtn: document.getElementById("signupTabBtn"),
+  authName: document.getElementById("authName"),
+  authEmail: document.getElementById("authEmail"),
+  authPassword: document.getElementById("authPassword"),
+  nameFieldWrap: document.getElementById("nameFieldWrap"),
+  signedInPanel: document.getElementById("signedInPanel"),
+  signedInUserText: document.getElementById("signedInUserText"),
+  logoutBtn: document.getElementById("logoutBtn"),
+  sessionTitle: document.getElementById("sessionTitle"),
+  sessionText: document.getElementById("sessionText"),
+  roleBadge: document.getElementById("roleBadge"),
+  authStateMini: document.getElementById("authStateMini"),
+  staffPanelSection: document.getElementById("staffPanelSection"),
+  addPartForm: document.getElementById("addPartForm"),
+  addPartStatus: document.getElementById("addPartStatus"),
+  partName: document.getElementById("partName"),
+  partCategory: document.getElementById("partCategory"),
+  partVehicle: document.getElementById("partVehicle"),
+  partPrice: document.getElementById("partPrice"),
+  partStock: document.getElementById("partStock"),
+  partImage: document.getElementById("partImage"),
+  partDescription: document.getElementById("partDescription"),
+  cartNavBtn: document.getElementById("cartNavBtn"),
+  heroPrice1: document.getElementById("heroPrice1"),
+  heroPrice2: document.getElementById("heroPrice2"),
+  heroPrice3: document.getElementById("heroPrice3"),
+  aiSearchMode: document.getElementById("aiSearchMode"),
+  aiMatchCount: document.getElementById("aiMatchCount"),
+  aiSearchBadge: document.getElementById("aiSearchBadge"),
+  aiSummary: document.getElementById("aiSummary"),
+  aiTopMatches: document.getElementById("aiTopMatches"),
+  aiSuggestions: document.getElementById("aiSuggestions")
+};
+
+let authMode = "login";
+let currentUser = null;
+let currentUserRole = "guest";
+let parts = [];
+let cart = JSON.parse(localStorage.getItem("eas-cart") || "[]");
+let activeSearchTerm = "";
+
+const authErrorMessages = {
+  "auth/configuration-not-found": "Secure account setup is not finished yet. Please complete the sign-in configuration in the admin console.",
+  "auth/email-already-in-use": "That email already has an account. Try logging in instead.",
+  "auth/invalid-email": "Enter a valid email address.",
+  "auth/invalid-credential": "The email or password is incorrect.",
+  "auth/missing-password": "Enter your password to continue.",
+  "auth/too-many-requests": "Too many login attempts. Please wait a moment and try again.",
+  "auth/user-disabled": "This account has been disabled.",
+  "auth/user-not-found": "No account was found for that email.",
+  "auth/weak-password": "Use a stronger password with at least 6 characters.",
+  "auth/network-request-failed": "Network connection failed. Check your internet connection and try again.",
+  "auth/operation-not-allowed": "Secure email/password sign-in is not enabled yet.",
+  "auth/unauthorized-domain": "This site domain is not authorized for sign-in yet."
+};
+
+function formatMoney(value) {
+  return `$${Number(value || 0).toFixed(2)}`;
+}
+
+function persistCart() {
+  localStorage.setItem("eas-cart", JSON.stringify(cart));
+}
+
+function getCartCount() {
+  return cart.reduce((sum, item) => sum + item.qty, 0);
+}
+
+function getCartTotal() {
+  return cart.reduce((sum, item) => sum + Number(item.price) * item.qty, 0);
+}
+
+function scrollToCheckout() {
+  document.getElementById("checkout").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function updateAuthPanelVisibility() {
+  const isSignedIn = !!currentUser;
+  els.authForm.classList.toggle("hidden", isSignedIn);
+  els.signedInPanel.classList.toggle("hidden", !isSignedIn);
+}
+
+function openAuthModal() {
+  updateAuthPanelVisibility();
+  if (!currentUser && window.location.protocol === "file:") {
+    els.authStatus.textContent = "Open this page through localhost or a trusted domain for reliable secure login.";
+  }
+  els.authModal.classList.remove("hidden");
+}
+
+function closeAuthModal() {
+  els.authModal.classList.add("hidden");
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const loginActive = mode === "login";
+
+  els.authModalTitle.textContent = loginActive ? "Login" : "Create Account";
+  els.authSubmitBtn.textContent = loginActive ? "Login" : "Create Account";
+  els.nameFieldWrap.classList.toggle("hidden", loginActive);
+
+  els.loginTabBtn.classList.toggle("active-tab", loginActive);
+  els.signupTabBtn.classList.toggle("active-tab", !loginActive);
+  els.loginTabBtn.classList.toggle("text-slate-600", !loginActive);
+  els.signupTabBtn.classList.toggle("text-slate-600", loginActive);
+}
+
+function getReadableAuthError(error) {
+  if (!error) return "Authentication failed. Please try again.";
+  return authErrorMessages[error.code] || "Authentication failed. Please try again.";
+}
+
+async function initializeAuthPersistence() {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+  } catch (error) {
+    console.warn("Auth persistence setup failed.", error);
+  }
+}
+
+async function ensureUserDoc(user, name = "") {
+  const userRef = doc(db, "users", user.uid);
+  const snap = await getDoc(userRef);
+
+  if (!snap.exists()) {
+    await setDoc(userRef, {
+      uid: user.uid,
+      name: name || user.displayName || "",
+      email: user.email || "",
+      role: "customer",
+      createdAt: serverTimestamp()
+    });
+  }
+}
+
+async function fetchUserRole(uid) {
+  const userRef = doc(db, "users", uid);
+  const snap = await getDoc(userRef);
+  if (!snap.exists()) return "customer";
+  return snap.data().role || "customer";
+}
+
+function hydrateCategoryFilter() {
+  const categories = Array.from(new Set(parts.map((part) => part.category).filter(Boolean))).sort();
+  els.categoryFilter.innerHTML = `<option value="all">All Categories</option>${categories
+    .map((category) => `<option value="${category}">${category}</option>`)
+    .join("")}`;
+}
+
+function sortParts(list, sort) {
+  const sorted = [...list];
+  if (sort === "price-low") sorted.sort((left, right) => Number(left.price) - Number(right.price));
+  if (sort === "price-high") sorted.sort((left, right) => Number(right.price) - Number(left.price));
+  if (sort === "name") sorted.sort((left, right) => (left.name || "").localeCompare(right.name || ""));
+  if (sort === "featured") sorted.sort((left, right) => (left.partId || "").localeCompare(right.partId || ""));
+  return sorted;
+}
+
+function renderEasternAI(searchResult) {
+  els.aiSearchMode.textContent = searchResult.mode;
+  els.aiMatchCount.textContent = searchResult.matchCountLabel;
+  els.aiSearchBadge.textContent = searchResult.badge;
+  els.aiSummary.textContent = searchResult.summary;
+
+  els.aiTopMatches.innerHTML = searchResult.topResults.length
+    ? searchResult.topResults
+        .map(
+          (part) => `
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <div class="font-semibold text-white">${part.name}</div>
+                  <div class="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">${part.partId} • ${part.category} • ${part.vehicle}</div>
+                </div>
+                <div class="rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                  Score ${part.aiScore}
+                </div>
+              </div>
+              <p class="mt-3 text-sm leading-6 text-slate-300">
+                ${part.aiReasons.length ? part.aiReasons.join(", ") : "Strong general match from the current catalog."}
+              </p>
+            </div>
+          `
+        )
+        .join("")
+    : `<div class="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-slate-400">No direct EasternAI match yet. Try a vehicle, category, or a simpler phrase.</div>`;
+
+  els.aiSuggestions.innerHTML = searchResult.suggestions
+    .map(
+      (prompt) => `
+        <button type="button" data-ai-suggestion="${prompt}" class="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-cyan-400 hover:text-white">
+          ${prompt}
+        </button>
+      `
+    )
+    .join("");
+
+  els.aiSuggestions.querySelectorAll("[data-ai-suggestion]").forEach((button) => {
+    button.addEventListener("click", () => {
+      els.searchInput.value = button.dataset.aiSuggestion || "";
+      performSearch();
+    });
+  });
+}
+
+function renderProducts(searchResult) {
+  const sort = els.sortFilter.value;
+  const filtered = sortParts(searchResult.results, sort);
+
+  els.resultCount.textContent = filtered.length;
+  els.emptyProductsState.classList.toggle("hidden", filtered.length > 0);
+
+  els.productsGrid.innerHTML = filtered
+    .map(
+      (part) => `
+        <article class="card-hover overflow-hidden rounded-[26px] bg-white shadow-md">
+          <div class="flex h-40 items-center justify-center bg-gradient-to-br ${getCategoryGradient(part.category)}">
+            ${
+              part.imageUrl
+                ? `<img src="${part.imageUrl}" alt="${part.name}" class="h-full w-full object-cover" />`
+                : `<div class="text-center text-white">
+                    <i class="fa-solid fa-gear text-4xl opacity-90"></i>
+                    <div class="mt-2 text-[10px] uppercase tracking-[0.25em] opacity-80">${part.category || "Part"}</div>
+                  </div>`
+            }
+          </div>
+
+          <div class="p-4 sm:p-5">
+            <div class="flex flex-wrap gap-2">
+              <span class="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-700 sm:text-[11px]">${part.category || "General"}</span>
+              <span class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600 sm:text-[11px]">${part.vehicle || "Universal"}</span>
+            </div>
+
+            <div class="mt-3 flex items-start justify-between gap-3">
+              <div>
+                <h3 class="text-base font-semibold text-slate-900 sm:text-lg">${part.name || "Unnamed Part"}</h3>
+                <p class="mt-1 text-[11px] uppercase tracking-[0.18em] text-slate-400 sm:text-xs">${part.partId || "Auto ID"}</p>
+              </div>
+              <div class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600 sm:text-[11px]">
+                ${part.stock || "In Stock"}
+              </div>
+            </div>
+
+            <p class="line-clamp-2 mt-3 text-sm leading-6 text-slate-500">
+              ${part.description || "Quality spare part available for ordering and workshop use."}
+            </p>
+
+            <div class="mt-5 flex items-end justify-between gap-4">
+              <div>
+                <div class="text-[10px] uppercase tracking-[0.16em] text-slate-400 sm:text-[11px]">Price</div>
+                <div class="font-display text-xl font-bold text-slate-900 sm:text-2xl">${formatMoney(part.price)}</div>
+              </div>
+              <button data-add-cart="${part.partId}" class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600">
+                Add
+              </button>
+            </div>
+          </div>
+        </article>
+      `
+    )
+    .join("");
+
+  els.productsGrid.querySelectorAll("[data-add-cart]").forEach((button) => {
+    button.addEventListener("click", () => addToCart(button.dataset.addCart));
+  });
+}
+
+function performSearch(options = {}) {
+  if (!options.preserveExistingTerm) {
+    activeSearchTerm = els.searchInput.value.trim();
+  }
+
+  const searchResult = runEasternAISearch(activeSearchTerm, parts, {
+    category: els.categoryFilter.value,
+    vehicle: els.vehicleFilter.value
+  });
+
+  renderProducts(searchResult);
+  renderEasternAI(searchResult);
+}
+
+function refreshHeroPrices() {
+  const brake = parts.find((part) => part.name?.toLowerCase().includes("brake"));
+  const oil = parts.find((part) => part.name?.toLowerCase().includes("oil"));
+  const cv = parts.find((part) => part.name?.toLowerCase().includes("cv"));
+
+  if (brake) els.heroPrice1.textContent = formatMoney(brake.price);
+  if (oil) els.heroPrice2.textContent = formatMoney(oil.price);
+  if (cv) els.heroPrice3.textContent = formatMoney(cv.price);
+}
+
+function addToCart(partId) {
+  const part = parts.find((item) => item.partId === partId);
+  if (!part) return;
+
+  const existing = cart.find((item) => item.partId === partId);
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    cart.push({
+      partId: part.partId,
+      name: part.name,
+      price: Number(part.price),
+      qty: 1
+    });
+  }
+
+  persistCart();
+  renderCart();
+}
+
+function changeQty(partId, delta) {
+  const item = cart.find((entry) => entry.partId === partId);
+  if (!item) return;
+
+  item.qty += delta;
+  if (item.qty <= 0) {
+    cart = cart.filter((entry) => entry.partId !== partId);
+  }
+
+  persistCart();
+  renderCart();
+}
+
+function clearCart() {
+  cart = [];
+  persistCart();
+  renderCart();
+}
+
+function renderCart() {
+  const count = getCartCount();
+  const total = getCartTotal();
+
+  els.navCartCount.textContent = count;
+  els.navCartTotal.textContent = formatMoney(total);
+  els.checkoutCartCount.textContent = count;
+  els.summaryItems.textContent = count;
+  els.summaryTotal.textContent = formatMoney(total);
+
+  els.emptyCartState.classList.toggle("hidden", cart.length > 0);
+
+  els.cartItems.innerHTML = cart
+    .map(
+      (item) => `
+        <div class="rounded-[22px] border border-slate-200 p-4">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <h4 class="text-sm font-semibold text-slate-900 sm:text-base">${item.name}</h4>
+              <p class="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">${item.partId}</p>
+              <p class="mt-2 text-sm text-slate-500">${formatMoney(item.price)} each</p>
+            </div>
+
+            <div class="text-right">
+              <div class="font-semibold text-slate-900">${formatMoney(item.price * item.qty)}</div>
+              <div class="mt-3 inline-flex items-center rounded-full border border-slate-200">
+                <button data-cart-minus="${item.partId}" class="px-3 py-2 text-slate-600">-</button>
+                <span class="px-3 py-2 text-sm font-semibold">${item.qty}</span>
+                <button data-cart-plus="${item.partId}" class="px-3 py-2 text-slate-600">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    )
+    .join("");
+
+  els.cartItems.querySelectorAll("[data-cart-minus]").forEach((button) => {
+    button.addEventListener("click", () => changeQty(button.dataset.cartMinus, -1));
+  });
+
+  els.cartItems.querySelectorAll("[data-cart-plus]").forEach((button) => {
+    button.addEventListener("click", () => changeQty(button.dataset.cartPlus, 1));
+  });
+}
+
+async function handleAuthSubmit(event) {
+  event.preventDefault();
+  const email = els.authEmail.value.trim();
+  const password = els.authPassword.value.trim();
+  const name = els.authName.value.trim();
+
+  if (!email || !password) {
+    els.authStatus.textContent = "Email and password are required.";
+    return;
+  }
+
+  els.authSubmitBtn.disabled = true;
+  els.authSubmitBtn.classList.add("opacity-60", "cursor-not-allowed");
+
+  try {
+    if (authMode === "signup") {
+      if (!name) {
+        els.authStatus.textContent = "Full name is required for sign up.";
+        els.authSubmitBtn.disabled = false;
+        els.authSubmitBtn.classList.remove("opacity-60", "cursor-not-allowed");
+        return;
+      }
+
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      await ensureUserDoc(result.user, name);
+      els.authStatus.textContent = "Account created successfully. You are now signed in.";
+    } else {
+      await signInWithEmailAndPassword(auth, email, password);
+      els.authStatus.textContent = "Logged in successfully.";
+    }
+
+    els.authForm.reset();
+    closeAuthModal();
+  } catch (error) {
+    els.authStatus.textContent = getReadableAuthError(error);
+  } finally {
+    els.authSubmitBtn.disabled = false;
+    els.authSubmitBtn.classList.remove("opacity-60", "cursor-not-allowed");
+  }
+}
+
+async function handleOrderSubmit() {
+  const name = els.customerName.value.trim();
+  const phone = els.customerPhone.value.trim();
+  const location = els.customerLocation.value.trim();
+  const notes = els.customerNotes.value.trim();
+
+  if (cart.length === 0) {
+    els.orderStatus.textContent = "Add parts to the cart before placing an order.";
+    return;
+  }
+
+  if (!name || !phone) {
+    els.orderStatus.textContent = "Customer name and phone are required.";
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, "orders"), {
+      customerName: name,
+      customerPhone: phone,
+      customerLocation: location,
+      customerNotes: notes,
+      items: cart,
+      total: getCartTotal(),
+      itemCount: getCartCount(),
+      userId: currentUser?.uid || null,
+      userEmail: currentUser?.email || null,
+      status: "pending",
+      createdAt: serverTimestamp()
+    });
+
+    els.orderStatus.textContent = "Order submitted successfully.";
+    clearCart();
+    els.customerNotes.value = "";
+  } catch (error) {
+    els.orderStatus.textContent = `Order failed: ${error.message}`;
+  }
+}
+
+function sendWhatsAppOrder() {
+  const name = els.customerName.value.trim() || "Not provided";
+  const phone = els.customerPhone.value.trim() || "Not provided";
+  const location = els.customerLocation.value.trim() || "Not provided";
+  const notes = els.customerNotes.value.trim() || "None";
+  const lines = cart.length
+    ? cart.map((item) => `- ${item.name} x${item.qty} = ${formatMoney(item.price * item.qty)}`).join("\n")
+    : "No items selected";
+
+  const message = `Hello Eastern Auto Spares,
+
+I would like to place an order.
+
+Customer: ${name}
+Phone: ${phone}
+Location: ${location}
+
+Items:
+${lines}
+
+Total: ${formatMoney(getCartTotal())}
+
+Notes:
+${notes}`;
+
+  const encoded = encodeURIComponent(message);
+  window.open(`https://wa.me/16038170479?text=${encoded}`, "_blank");
+}
+
+async function createPartWithAutoId(data) {
+  const counterRef = doc(db, "meta", "counters");
+  const partsRef = collection(db, "parts");
+
+  await runTransaction(db, async (transaction) => {
+    const counterSnap = await transaction.get(counterRef);
+    let current = 1000;
+
+    if (counterSnap.exists()) {
+      current = Number(counterSnap.data().partNumber || 1000);
+    }
+
+    const next = current + 1;
+    const generatedPartId = `EAS-${String(next).padStart(4, "0")}`;
+    const newPartRef = doc(partsRef);
+
+    transaction.set(counterRef, { partNumber: next }, { merge: true });
+    transaction.set(newPartRef, {
+      ...data,
+      partId: generatedPartId,
+      createdAt: serverTimestamp()
+    });
+  });
+}
+
+async function handleAddPart(event) {
+  event.preventDefault();
+
+  if (currentUserRole !== "staff") {
+    els.addPartStatus.textContent = "Only staff can add parts.";
+    return;
+  }
+
+  const data = {
+    name: els.partName.value.trim(),
+    category: els.partCategory.value,
+    vehicle: els.partVehicle.value,
+    price: Number(els.partPrice.value),
+    stock: els.partStock.value,
+    imageUrl: els.partImage.value.trim(),
+    description: els.partDescription.value.trim()
+  };
+
+  if (!data.name || !data.category || !data.vehicle || !data.price) {
+    els.addPartStatus.textContent = "Please fill in all required fields.";
+    return;
+  }
+
+  try {
+    await createPartWithAutoId(data);
+    els.addPartStatus.textContent = "Part added successfully with auto-generated ID.";
+    els.addPartForm.reset();
+    await loadParts();
+  } catch (error) {
+    els.addPartStatus.textContent = `Failed to add part: ${error.message}`;
+  }
+}
+
+function updateSessionUI() {
+  const isSignedIn = !!currentUser;
+  const isStaff = currentUserRole === "staff";
+
+  els.openAuthBtn.textContent = isSignedIn ? "Account" : "Login";
+  els.authStateMini.classList.toggle("hidden", !isSignedIn);
+  els.authStateMini.textContent = isSignedIn ? `${currentUser.email}` : "";
+
+  if (!isSignedIn) {
+    els.sessionTitle.textContent = "Guest Browsing";
+    els.sessionText.textContent = "Browse parts, search with EasternAI, and log in to place orders online.";
+    els.orderStatus.textContent = "Sign in to attach your account to orders. Guests can still prepare carts.";
+  } else if (isStaff) {
+    els.sessionTitle.textContent = "Staff Session";
+    els.sessionText.textContent = "You can manage parts, review EasternAI retrievals, and monitor the storefront as a live customer would.";
+    els.orderStatus.textContent = "Staff account linked. Orders will include your signed-in identity.";
+  } else {
+    els.sessionTitle.textContent = "Customer Session";
+    els.sessionText.textContent = "Your account is active. You can now place orders with your signed-in identity.";
+    els.orderStatus.textContent = "Signed in successfully. Your orders will be linked to your account.";
+  }
+
+  els.roleBadge.classList.toggle("hidden", !isStaff);
+  els.staffPanelSection.classList.toggle("hidden", !isStaff);
+  els.signedInUserText.textContent = isSignedIn ? `${currentUser.email} • ${currentUserRole}` : "";
+  updateAuthPanelVisibility();
+}
+
+function wireEvents() {
+  els.searchBtn.addEventListener("click", () => performSearch());
+  els.searchInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      performSearch();
+    }
+  });
+
+  els.categoryFilter.addEventListener("change", () => performSearch({ preserveExistingTerm: true }));
+  els.vehicleFilter.addEventListener("change", () => performSearch({ preserveExistingTerm: true }));
+  els.sortFilter.addEventListener("change", () => performSearch({ preserveExistingTerm: true }));
+
+  els.clearCartBtn.addEventListener("click", clearCart);
+  els.placeOrderBtn.addEventListener("click", handleOrderSubmit);
+  els.whatsAppBtn.addEventListener("click", sendWhatsAppOrder);
+  els.addPartForm.addEventListener("submit", handleAddPart);
+
+  els.openAuthBtn.addEventListener("click", openAuthModal);
+  els.closeAuthBtn.addEventListener("click", closeAuthModal);
+  els.loginTabBtn.addEventListener("click", () => setAuthMode("login"));
+  els.signupTabBtn.addEventListener("click", () => setAuthMode("signup"));
+  els.authForm.addEventListener("submit", handleAuthSubmit);
+  els.logoutBtn.addEventListener("click", async () => {
+    await signOut(auth);
+    closeAuthModal();
+  });
+
+  els.cartNavBtn.addEventListener("click", scrollToCheckout);
+  els.authModal.addEventListener("click", (event) => {
+    if (event.target === els.authModal) closeAuthModal();
+  });
+}
+
+async function loadParts() {
+  try {
+    const partsQuery = query(collection(db, "parts"), orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(partsQuery);
+
+    if (snapshot.empty) {
+      parts = [...demoParts];
+    } else {
+      parts = snapshot.docs.map((entry) => ({
+        id: entry.id,
+        ...entry.data()
+      }));
+    }
+  } catch (error) {
+    console.error(error);
+    parts = [...demoParts];
+  }
+
+  hydrateCategoryFilter();
+  refreshHeroPrices();
+  performSearch({ preserveExistingTerm: true });
+}
+
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user;
+
+  if (user) {
+    await ensureUserDoc(user);
+    currentUserRole = await fetchUserRole(user.uid);
+  } else {
+    currentUserRole = "guest";
+  }
+
+  updateSessionUI();
+});
+
+initializeAuthPersistence();
+wireEvents();
+setAuthMode("login");
+renderCart();
+loadParts();

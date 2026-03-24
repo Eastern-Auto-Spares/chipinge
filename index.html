@@ -513,42 +513,46 @@
   <script src="https://kit.fontawesome.com/7a0b8a8826.js" crossorigin="anonymous"></script>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-    import {
-      getAuth,
-      createUserWithEmailAndPassword,
-      signInWithEmailAndPassword,
-      signOut,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      getDocs,
-      getDoc,
-      setDoc,
-      doc,
-      query,
-      orderBy,
-      serverTimestamp,
-      runTransaction
-    } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+  import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    getDoc,
+    setDoc,
+    doc,
+    query,
+    orderBy,
+    serverTimestamp,
+    runTransaction
+  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDkRa5r_WkMFmDVsbt8beVyr44FS-uaNOw",
-      authDomain: "zimradinvest.firebaseapp.com",
-      projectId: "zimradinvest",
-      storageBucket: "zimradinvest.firebasestorage.app",
-      messagingSenderId: "729435016310",
-      appId: "1:729435016310:web:3efcf986edc24308faa357"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyDP7TqLDVxV6xSQRVJyESZSrAHtirIP5wk",
+    authDomain: "easternautospares-25e32.firebaseapp.com",
+    projectId: "easternautospares-25e32",
+    storageBucket: "easternautospares-25e32.firebasestorage.app",
+    messagingSenderId: "504628520496",
+    appId: "1:504628520496:web:a1b8f7645abb9c2d4caff5",
+    measurementId: "G-H2G3L7LGQ2"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-    const els = {
+  const els = {
+
       searchInput: document.getElementById("searchInput"),
       categoryFilter: document.getElementById("categoryFilter"),
       vehicleFilter: document.getElementById("vehicleFilter"),

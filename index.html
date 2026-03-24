@@ -1,230 +1,794 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eastern Auto Spares | Inventory & Services</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        .part-card:hover { transform: translateY(-5px); transition: all 0.3s ease; }
-        .category-badge { background: #d32f2f; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
-        .tab-active { border-bottom: 4px solid #d32f2f; color: #d32f2f; }
-        .hidden-content { display: none; }
-        .loyalty-gold { border: 1px solid #d4af37; background: linear-gradient(145deg, #ffffff, #fffdf5); }
-    </style>
-</head>
-<body class="bg-gray-100 font-sans text-gray-900">
-
-    <nav class="bg-white border-b-4 border-red-700 sticky top-0 z-50 shadow-sm">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="index.html" class="flex flex-col">
-                <span class="text-2xl font-black text-red-700 leading-none tracking-tighter uppercase">Eastern Auto Spares</span>
-                <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Chipinge, Zimbabwe</span>
-            </a>
-            <div class="flex gap-4">
-                <button onclick="window.print()" class="hidden md:flex items-center text-gray-600 hover:text-red-700 font-bold text-sm bg-gray-100 px-4 py-2 rounded-lg transition">
-                    <i class="fas fa-file-pdf mr-2 text-red-600"></i> Save Parts List
-                </button>
-                <a href="https://wa.me/16038170479" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-full font-bold text-sm flex items-center gap-2 shadow-md transition">
-                    <i class="fab fa-whatsapp"></i> WhatsApp
-                </a>
-            </div>
-        </div>
-    </nav>
-
-    <header class="bg-gray-900 text-white pt-16 pb-8">
-        <div class="container mx-auto px-6 text-center">
-            <h1 class="text-4xl font-extrabold mb-4 uppercase tracking-tight">Professional Automotive Solutions</h1>
-            <div class="flex justify-center gap-12 mt-12 border-b border-gray-700">
-                <button onclick="showTab('inventory')" id="tab-inv" class="pb-4 font-bold uppercase tracking-widest tab-active">Inventory List</button>
-                <button onclick="showTab('services')" id="tab-ser" class="pb-4 font-bold uppercase tracking-widest text-gray-400 hover:text-white transition">Services & Rewards</button>
-            </div>
-        </div>
-    </header>
-
-    <main class="container mx-auto px-6 py-12">
-
-        <div id="inventory-content">
-            
-            <section class="mb-16">
-                <h2 class="text-2xl font-black border-l-8 border-red-700 pl-4 uppercase mb-8 tracking-tighter">Universal Parts & Maintenance</h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div class="part-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-                        <div class="bg-gray-800 h-48 flex items-center justify-center text-yellow-400">
-                            <i class="fas fa-bolt text-5xl"></i>
-                        </div>
-                        <div class="p-4">
-                            <span class="category-badge uppercase">Electrical</span>
-                            <h4 class="font-bold text-lg mt-2">Blade Fuse Packs</h4>
-                            <div class="flex justify-between items-center border-t pt-3 mt-4">
-                                <span class="text-green-600 font-bold text-xs">IN STOCK</span>
-                                <a href="https://wa.me/16038170479?text=Inquiry:%20Fuses" class="text-red-700 font-bold text-sm">Enquire</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="part-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-                        <img src="https://placehold.co/400x300/212121/white?text=Engine+Oil" class="w-full h-48 object-cover">
-                        <div class="p-4">
-                            <span class="category-badge uppercase">Fluids</span>
-                            <h4 class="font-bold text-lg mt-2">Engine Oil (5L)</h4>
-                            <div class="flex justify-between items-center border-t pt-3 mt-4">
-                                <span class="text-green-600 font-bold text-xs uppercase italic">10W30 / 20W50</span>
-                                <a href="https://wa.me/16038170479" class="text-red-700 font-bold text-sm">Enquire</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="part-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-                        <img src="https://placehold.co/400x300/212121/white?text=Hydraulic+Jack" class="w-full h-48 object-cover">
-                        <div class="p-4">
-                            <span class="category-badge uppercase">Tools</span>
-                            <h4 class="font-bold text-lg mt-2">2-Ton Hydraulic Jack</h4>
-                            <div class="flex justify-between items-center border-t pt-3 mt-4">
-                                <span class="text-green-600 font-bold text-xs uppercase italic">Ready</span>
-                                <a href="https://wa.me/16038170479" class="text-red-700 font-bold text-sm">Enquire</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="part-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-                        <img src="https://placehold.co/400x300/212121/white?text=Jumper+Cables" class="w-full h-48 object-cover">
-                        <div class="p-4">
-                            <span class="category-badge uppercase">Emergency</span>
-                            <h4 class="font-bold text-lg mt-2">Jumper Cables (600A)</h4>
-                            <div class="flex justify-between items-center border-t pt-3 mt-4">
-                                <span class="text-green-600 font-bold text-xs uppercase italic">In Stock</span>
-                                <a href="https://wa.me/16038170479" class="text-red-700 font-bold text-sm">Enquire</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-2 space-y-8">
-                    <div class="bg-white p-8 rounded-2xl shadow-sm border-l-4 border-red-700">
-                        <h3 class="font-black text-xl mb-6 uppercase text-gray-800 italic">Toyota Corolla & Wish Specialization</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3 text-sm font-medium text-gray-600">
-                            <li>• Oil Filters (M20x1.5 Toyota type)</li>
-                            <li>• Front Brake Pad Sets</li>
-                            <li>• Lower Ball Joints</li>
-                            <li>• CV Joints (Outer 23-26 spline)</li>
-                            <li>• Inner CV / Tripod (23 splines)</li>
-                            <li>• Aluminum Radiators</li>
-                            <li>• Spark Plugs (14mm NGK equiv.)</li>
-                            <li>• Wheel Nuts (M12x1.5)</li>
-                            <li>• Brake Discs (260-280 mm rotor)</li>
-                            <li>• Engine Mounts (Rubber)</li>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-8 rounded-2xl shadow-sm border-l-4 border-red-700">
-                        <h3 class="font-black text-xl mb-6 uppercase text-gray-800 italic">Honda Fit & Mazda Demio Components</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3 text-sm font-medium text-gray-600">
-                            <li>• Honda Front Brake Pads</li>
-                            <li>• Tie Rod Ends (Inner/Outer)</li>
-                            <li>• Ignition Coils (Coil-on-plug)</li>
-                            <li>• Drive Belts (V-belt)</li>
-                            <li>• Shock Absorbers (Strut)</li>
-                            <li>• Wheel Bearings (35x68x37 mm)</li>
-                            <li>• Fuel Pumps (Electric 12V)</li>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-8 rounded-2xl shadow-sm border-l-4 border-red-700">
-                        <h3 class="font-black text-xl mb-6 uppercase text-gray-800 italic">Nissan AD Van & Toyota Hiace</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-3 text-sm font-medium text-gray-600">
-                            <li>• Air Filters (Panel 250x200 mm)</li>
-                            <li>• Rear Brake Shoe Sets</li>
-                            <li>• Water Pumps (Mechanical)</li>
-                            <li>• Starter Motors (12V)</li>
-                            <li>• Valve Cover Gaskets</li>
-                            <li>• Wheel Studs (M12x1.5)</li>
-                            <li>• Hiace Fuel Filters (Inline)</li>
-                            <li>• Clutch Kits (200-240 mm)</li>
-                            <li>• Alternators (12V 90A)</li>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-6">
-                    <div class="bg-red-700 text-white p-8 rounded-2xl shadow-lg">
-                        <h3 class="font-black text-2xl mb-6 uppercase italic">Tyre Center</h3>
-                        <div class="space-y-4 font-bold">
-                            <div class="border-b border-red-600 pb-2 flex justify-between"><span>175/70 R13</span><span>Corolla</span></div>
-                            <div class="border-b border-red-600 pb-2 flex justify-between"><span>185/70 R14</span><span>Honda Fit</span></div>
-                            <div class="border-b border-red-600 pb-2 flex justify-between"><span>195/R14C</span><span>Hiace/AD Van</span></div>
-                        </div>
-                        <p class="mt-8 text-[10px] uppercase tracking-widest opacity-60">Bulk discounts available</p>
-                    </div>
-                    <div class="bg-gray-800 text-gray-100 p-8 rounded-2xl shadow-lg">
-                        <h3 class="font-black text-xl mb-6 uppercase">Workshop Supplies</h3>
-                        <ul class="text-xs space-y-3 font-bold text-gray-400">
-                            <li>• ATF / POWER STEERING FLUID</li>
-                            <li>• CV BOOT KITS + GREASE</li>
-                            <li>• LITHIUM GREASE (400G)</li>
-                            <li>• AEROSOL BRAKE CLEANER</li>
-                            <li>• CABLE TIES / HOSE CLAMPS</li>
-                            <li>• SCREWDRIVER SETS</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="services-content" class="hidden-content animate-pulse">
-            <div class="max-w-4xl mx-auto space-y-8">
-                <div class="bg-white border-2 border-blue-50 p-10 rounded-3xl shadow-sm flex items-center gap-10">
-                    <div class="text-blue-600 text-6xl hidden md:block"><i class="fas fa-microchip"></i></div>
-                    <div>
-                        <h2 class="text-2xl font-black uppercase text-blue-900 mb-2">OBD II Diagnostic Scanning</h2>
-                        <p class="text-gray-600 mb-6 font-medium">Identify engine faults and sensor failures instantly with our professional scanning tools.</p>
-                        <a href="https://wa.me/16038170479?text=Inquiry:%20OBD%20Scan" class="inline-block bg-blue-600 text-white px-6 py-2 rounded font-bold uppercase text-xs tracking-widest transition hover:bg-blue-700">Request Scan</a>
-                    </div>
-                </div>
-
-                <div class="loyalty-gold p-10 rounded-3xl shadow-sm flex items-center gap-10 border-2 border-yellow-200">
-                    <div class="text-yellow-600 text-6xl hidden md:block"><i class="fas fa-gem"></i></div>
-                    <div>
-                        <span class="inline-block bg-yellow-100 text-yellow-800 text-[10px] font-bold px-3 py-1 rounded-full mb-4 uppercase">Coming Soon</span>
-                        <h2 class="text-2xl font-black uppercase text-gray-900 mb-2 tracking-tighter">Eastern Auto Loyalty Card</h2>
-                        <p class="text-gray-600 mb-6 font-medium">Member card holders will receive a <span class="text-red-700 font-black">2% Discount</span> on selected parts and services.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <footer class="bg-white border-t border-gray-200 py-12 mt-20">
-        <div class="container mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10">
-            <div><h4 class="font-black text-red-700 text-lg mb-4 uppercase">Eastern Auto Spares</h4><p class="text-sm text-gray-500 font-medium leading-relaxed">Top-tier Japanese spare parts procurement. Serving Chipinge and the Manicaland province with integrity.</p></div>
-            <div><h4 class="font-bold text-gray-800 mb-4 uppercase text-xs tracking-widest">Headquarters</h4><p class="text-sm text-gray-600 font-bold">Chipinge Town, Zimbabwe 🇿🇼</p><p class="text-xs text-gray-400 mt-2 italic text-sm">Director: Samuel Takwirira</p></div>
-            <div><h4 class="font-bold text-gray-800 mb-4 uppercase text-xs tracking-widest">Digital Contact</h4><a href="mailto:info@easternautoparts.com" class="block text-sm text-red-700 font-bold mb-1 underline">info@easternautoparts.com</a><a href="https://wa.me/16038170479" class="block text-sm text-green-600 font-bold tracking-tight">+1 603 817 0479</a></div>
-        </div>
-        <div class="text-center mt-12 pt-8 border-t border-gray-100 text-[10px] text-gray-400 uppercase tracking-widest">© 2026 Eastern Auto Spares. All Rights Reserved.</div>
-    </footer>
-
-    <script>
-        function showTab(tabName) {
-            const inv = document.getElementById('inventory-content');
-            const ser = document.getElementById('services-content');
-            const tabInv = document.getElementById('tab-inv');
-            const tabSer = document.getElementById('tab-ser');
-
-            if(tabName === 'inventory') {
-                inv.classList.remove('hidden-content');
-                ser.classList.add('hidden-content');
-                tabInv.classList.add('tab-active');
-                tabSer.classList.remove('tab-active');
-                tabSer.classList.add('text-gray-400');
-            } else {
-                inv.classList.add('hidden-content');
-                ser.classList.remove('hidden-content');
-                tabSer.classList.add('tab-active');
-                tabInv.classList.remove('tab-active');
-                tabInv.classList.add('text-gray-400');
-            }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eastern Auto Spares | Parts, Pricing & Online Orders</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Space Grotesk', 'sans-serif'],
+            body: ['Manrope', 'sans-serif']
+          },
+          colors: {
+            brand: {
+              50: '#fff3f2',
+              100: '#ffe1de',
+              500: '#d63a2f',
+              600: '#bf2f26',
+              700: '#94231d',
+              900: '#34100d'
+            },
+            ink: '#0d141f',
+            steel: '#192435'
+          },
+          boxShadow: {
+            glow: '0 20px 60px rgba(214,58,47,0.20)',
+            soft: '0 20px 50px rgba(15,23,42,0.10)'
+          }
         }
-    </script>
+      }
+    }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Manrope', sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(214,58,47,0.18), transparent 32%),
+        radial-gradient(circle at top right, rgba(59,130,246,0.16), transparent 25%),
+        linear-gradient(180deg, #09111b 0%, #101826 28%, #f5f7fb 28%, #f5f7fb 100%);
+    }
+    .glass {
+      background: rgba(255,255,255,0.76);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .hero-grid {
+      background-image:
+        linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    .part-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 22px 50px rgba(15,23,42,0.15);
+    }
+    .hidden-content { display: none; }
+    .tab-active {
+      color: white;
+      background: linear-gradient(135deg, #d63a2f, #8f2019);
+      box-shadow: 0 10px 30px rgba(214,58,47,0.25);
+    }
+    .staff-badge {
+      background: linear-gradient(135deg, #f59e0b, #dc2626);
+    }
+  </style>
+</head>
+<body class="text-slate-900 font-body">
+  <nav class="sticky top-0 z-50 border-b border-white/10 bg-slate-950/85 backdrop-blur-xl">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+      <a href="#" class="flex flex-col">
+        <span class="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-white">Eastern Auto Spares</span>
+        <span class="text-[11px] sm:text-xs uppercase tracking-[0.25em] text-slate-400">Chipinge, Zimbabwe</span>
+      </a>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button onclick="showTab('inventory')" id="tab-inv" class="tab-active rounded-full px-4 py-2 text-xs sm:text-sm font-bold transition">Inventory</button>
+        <button onclick="showTab('services')" id="tab-ser" class="rounded-full border border-white/10 px-4 py-2 text-xs sm:text-sm font-bold text-slate-300 transition hover:text-white">Services</button>
+        <button onclick="toggleStaffPanel()" class="rounded-full border border-amber-400/40 bg-amber-500/10 px-4 py-2 text-xs sm:text-sm font-bold text-amber-300 transition hover:bg-amber-500/20">
+          Staff
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <header class="relative overflow-hidden">
+    <div class="hero-grid">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 pt-10 sm:pt-16 pb-12">
+        <div class="grid lg:grid-cols-[1.2fr_0.8fr] gap-8 items-center">
+          <div>
+            <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs uppercase tracking-[0.25em] text-slate-300">
+              <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+              Live pricing • Mobile first • Order online
+            </div>
+
+            <h1 class="mt-6 max-w-3xl font-display text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white">
+              Premium spare parts storefront for modern customers and workshop teams.
+            </h1>
+
+            <p class="mt-5 max-w-2xl text-sm sm:text-lg leading-7 text-slate-300">
+              Browse stocked parts, see pricing instantly, place orders online, and manage staff-only pricing adjustments from one polished storefront.
+            </p>
+
+            <div class="mt-8 flex flex-col sm:flex-row gap-3">
+              <a href="#catalog" class="rounded-2xl bg-brand-500 px-6 py-4 text-center font-bold text-white shadow-glow transition hover:bg-brand-600">
+                Browse Parts
+              </a>
+              <a href="#cart-section" class="rounded-2xl border border-white/15 bg-white/5 px-6 py-4 text-center font-bold text-white transition hover:bg-white/10">
+                Go To Order Desk
+              </a>
+            </div>
+
+            <div class="mt-8 grid grid-cols-3 gap-3 sm:gap-4">
+              <div class="glass rounded-2xl p-4 shadow-soft">
+                <div class="text-2xl font-display font-bold text-brand-600">120+</div>
+                <div class="text-xs uppercase tracking-[0.2em] text-slate-500">Listed Parts</div>
+              </div>
+              <div class="glass rounded-2xl p-4 shadow-soft">
+                <div class="text-2xl font-display font-bold text-emerald-600">Same Day</div>
+                <div class="text-xs uppercase tracking-[0.2em] text-slate-500">Order Response</div>
+              </div>
+              <div class="glass rounded-2xl p-4 shadow-soft">
+                <div class="text-2xl font-display font-bold text-sky-600">Mobile</div>
+                <div class="text-xs uppercase tracking-[0.2em] text-slate-500">Optimized</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass rounded-[28px] border border-white/30 p-5 sm:p-6 shadow-soft">
+            <div class="rounded-[24px] bg-slate-950 p-6 text-white">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Featured Today</p>
+                  <h2 class="mt-2 font-display text-2xl font-bold">Toyota & Honda Essentials</h2>
+                </div>
+                <div class="rounded-2xl bg-brand-500/15 p-4 text-brand-300">
+                  <i class="fas fa-warehouse text-2xl"></i>
+                </div>
+              </div>
+
+              <div class="mt-6 space-y-3">
+                <div class="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3">
+                  <span>Front Brake Pad Set</span>
+                  <span class="font-bold text-emerald-300">$38</span>
+                </div>
+                <div class="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3">
+                  <span>Engine Oil 5L</span>
+                  <span class="font-bold text-emerald-300">$29</span>
+                </div>
+                <div class="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3">
+                  <span>Outer CV Joint</span>
+                  <span class="font-bold text-emerald-300">$52</span>
+                </div>
+              </div>
+
+              <div class="mt-6 rounded-2xl border border-white/10 bg-gradient-to-r from-brand-500/20 to-orange-500/20 p-4">
+                <p class="text-sm text-slate-200">
+                  Staff pricing controls can increase or decrease all listed prices by a chosen percentage.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-7xl px-4 sm:px-6 pb-24">
+    <div id="inventory-content">
+      <section class="-mt-6 relative z-10">
+        <div class="glass rounded-[28px] border border-white/40 p-4 sm:p-6 shadow-soft">
+          <div class="grid gap-4 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div class="rounded-2xl bg-white p-4 shadow-sm">
+                <label class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Search Parts</label>
+                <div class="mt-2 flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3">
+                  <i class="fas fa-search text-slate-400"></i>
+                  <input id="searchInput" type="text" placeholder="Brake pads, oil, filters..." class="w-full bg-transparent outline-none" oninput="renderProducts()" />
+                </div>
+              </div>
+
+              <div class="rounded-2xl bg-white p-4 shadow-sm">
+                <label class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Category</label>
+                <select id="categoryFilter" onchange="renderProducts()" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none">
+                  <option value="all">All Categories</option>
+                  <option value="Brakes">Brakes</option>
+                  <option value="Fluids">Fluids</option>
+                  <option value="Electrical">Electrical</option>
+                  <option value="Suspension">Suspension</option>
+                  <option value="Engine">Engine</option>
+                  <option value="Emergency">Emergency</option>
+                  <option value="Tools">Tools</option>
+                  <option value="Cooling">Cooling</option>
+                </select>
+              </div>
+
+              <div class="rounded-2xl bg-white p-4 shadow-sm">
+                <label class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Vehicle Family</label>
+                <select id="vehicleFilter" onchange="renderProducts()" class="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none">
+                  <option value="all">All Vehicles</option>
+                  <option value="Toyota">Toyota</option>
+                  <option value="Honda">Honda</option>
+                  <option value="Mazda">Mazda</option>
+                  <option value="Nissan">Nissan</option>
+                  <option value="Universal">Universal</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="rounded-[24px] bg-slate-950 p-5 text-white">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-xs uppercase tracking-[0.25em] text-slate-400">Pricing Status</p>
+                  <h3 class="mt-2 font-display text-2xl font-bold" id="pricingStatus">Standard Retail</h3>
+                </div>
+                <span id="staffModeBadge" class="hidden staff-badge rounded-full px-3 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-white">
+                  Staff Active
+                </span>
+              </div>
+              <p class="mt-3 text-sm text-slate-300">
+                Customers see live adjusted prices immediately when staff mode changes them.
+              </p>
+              <div class="mt-4 text-sm text-slate-400">
+                Current price adjustment:
+                <span id="adjustmentLabel" class="font-bold text-white">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="catalog" class="mt-10">
+        <div class="flex items-end justify-between gap-4 mb-6">
+          <div>
+            <p class="text-xs uppercase tracking-[0.25em] text-brand-600 font-bold">Inventory</p>
+            <h2 class="font-display text-3xl sm:text-4xl font-bold text-slate-900">Priced Parts Catalog</h2>
+          </div>
+          <div class="text-sm text-slate-500">
+            <span id="resultCount">0</span> parts available
+          </div>
+        </div>
+
+        <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5"></div>
+      </section>
+
+      <section class="mt-14 grid lg:grid-cols-[1.05fr_0.95fr] gap-6">
+        <div class="rounded-[28px] bg-white p-6 sm:p-8 shadow-soft">
+          <p class="text-xs uppercase tracking-[0.25em] text-brand-600 font-bold">Specializations</p>
+          <h3 class="mt-2 font-display text-3xl font-bold">Workshop-ready brands and fast moving lines</h3>
+          <div class="mt-6 grid sm:grid-cols-2 gap-4 text-sm text-slate-600">
+            <div class="rounded-2xl bg-slate-50 p-5">
+              <h4 class="font-bold text-slate-900">Toyota Corolla & Wish</h4>
+              <ul class="mt-3 space-y-2">
+                <li>Oil filters, brake pads, CV joints</li>
+                <li>Radiators, spark plugs, wheel nuts</li>
+                <li>Brake discs and engine mounts</li>
+              </ul>
+            </div>
+            <div class="rounded-2xl bg-slate-50 p-5">
+              <h4 class="font-bold text-slate-900">Honda Fit & Mazda Demio</h4>
+              <ul class="mt-3 space-y-2">
+                <li>Tie rod ends and ignition coils</li>
+                <li>Shock absorbers and wheel bearings</li>
+                <li>Fuel pumps and drive belts</li>
+              </ul>
+            </div>
+            <div class="rounded-2xl bg-slate-50 p-5">
+              <h4 class="font-bold text-slate-900">Nissan AD Van & Hiace</h4>
+              <ul class="mt-3 space-y-2">
+                <li>Brake shoes, water pumps, starters</li>
+                <li>Fuel filters, clutch kits, alternators</li>
+                <li>Wheel studs and valve cover gaskets</li>
+              </ul>
+            </div>
+            <div class="rounded-2xl bg-gradient-to-br from-brand-600 to-brand-900 p-5 text-white">
+              <h4 class="font-bold">Tyre Center</h4>
+              <ul class="mt-3 space-y-2 text-sm text-white/85">
+                <li>175/70 R13 for Corolla</li>
+                <li>185/70 R14 for Honda Fit</li>
+                <li>195/R14C for Hiace and AD Van</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-[28px] bg-slate-950 p-6 sm:p-8 text-white shadow-soft">
+          <p class="text-xs uppercase tracking-[0.25em] text-slate-400 font-bold">Online Orders</p>
+          <h3 class="mt-2 font-display text-3xl font-bold">Built for mobile checkout</h3>
+          <p class="mt-4 text-slate-300">
+            Customers can add items, fill in delivery details, and send the full order online through WhatsApp.
+          </p>
+
+          <div class="mt-6 grid gap-4 sm:grid-cols-2">
+            <div class="rounded-2xl bg-white/5 p-5">
+              <i class="fas fa-cart-shopping text-brand-400 text-2xl"></i>
+              <h4 class="mt-3 font-bold">Add to cart</h4>
+              <p class="mt-2 text-sm text-slate-400">Clear quantities and live totals on every device size.</p>
+            </div>
+            <div class="rounded-2xl bg-white/5 p-5">
+              <i class="fas fa-comments text-emerald-400 text-2xl"></i>
+              <h4 class="mt-3 font-bold">Send instantly</h4>
+              <p class="mt-2 text-sm text-slate-400">Order summary is prefilled into WhatsApp for quick confirmation.</p>
+            </div>
+            <div class="rounded-2xl bg-white/5 p-5">
+              <i class="fas fa-percent text-amber-400 text-2xl"></i>
+              <h4 class="mt-3 font-bold">Staff pricing</h4>
+              <p class="mt-2 text-sm text-slate-400">Increase or reduce all visible prices by percentage.</p>
+            </div>
+            <div class="rounded-2xl bg-white/5 p-5">
+              <i class="fas fa-mobile-screen-button text-sky-400 text-2xl"></i>
+              <h4 class="mt-3 font-bold">Mobile first</h4>
+              <p class="mt-2 text-sm text-slate-400">Touch-friendly cards, forms, drawers, and action buttons.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="cart-section" class="mt-14 grid xl:grid-cols-[1fr_360px] gap-6 items-start">
+        <div class="rounded-[28px] bg-white p-6 sm:p-8 shadow-soft">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <p class="text-xs uppercase tracking-[0.25em] text-brand-600 font-bold">Order Desk</p>
+              <h3 class="mt-2 font-display text-3xl font-bold">Place an order online</h3>
+            </div>
+            <div class="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-600">
+              <span id="cartCount">0</span> items
+            </div>
+          </div>
+
+          <div id="cartItems" class="mt-6 space-y-3"></div>
+
+          <div id="emptyCartState" class="mt-6 rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-500">
+            Add parts from the catalog to start an order.
+          </div>
+        </div>
+
+        <aside class="xl:sticky xl:top-24 rounded-[28px] bg-slate-950 p-6 text-white shadow-soft">
+          <h4 class="font-display text-2xl font-bold">Customer Details</h4>
+
+          <div class="mt-5 space-y-4">
+            <input id="customerName" type="text" placeholder="Customer full name" class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-slate-500" />
+            <input id="customerPhone" type="text" placeholder="Phone / WhatsApp number" class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-slate-500" />
+            <input id="customerLocation" type="text" placeholder="Pickup or delivery location" class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-slate-500" />
+            <textarea id="customerNotes" rows="4" placeholder="Vehicle model, year, notes..." class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 outline-none placeholder:text-slate-500"></textarea>
+          </div>
+
+          <div class="mt-6 rounded-2xl bg-white/5 p-5">
+            <div class="flex justify-between text-sm text-slate-300">
+              <span>Subtotal</span>
+              <span id="subtotalValue">$0.00</span>
+            </div>
+            <div class="mt-3 flex justify-between text-sm text-slate-300">
+              <span>Adjustment</span>
+              <span id="adjustmentValue">0%</span>
+            </div>
+            <div class="mt-4 border-t border-white/10 pt-4 flex justify-between text-lg font-bold">
+              <span>Total</span>
+              <span id="totalValue">$0.00</span>
+            </div>
+          </div>
+
+          <div class="mt-6 grid gap-3">
+            <a id="whatsappOrderBtn" href="#" target="_blank" class="rounded-2xl bg-emerald-500 px-5 py-4 text-center font-bold text-white transition hover:bg-emerald-600">
+              <i class="fab fa-whatsapp mr-2"></i>Send Order via WhatsApp
+            </a>
+            <button onclick="clearCart()" class="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 font-bold text-white transition hover:bg-white/10">
+              Clear Cart
+            </button>
+          </div>
+
+          <p class="mt-4 text-xs leading-6 text-slate-400">
+            For real production use, connect this front-end to a backend for secure staff login, saved orders, stock control, and payment processing.
+          </p>
+        </aside>
+      </section>
+    </div>
+
+    <div id="services-content" class="hidden-content mt-10">
+      <div class="grid gap-6 lg:grid-cols-2">
+        <div class="rounded-[28px] bg-white p-8 shadow-soft">
+          <div class="flex items-start gap-4">
+            <div class="rounded-2xl bg-sky-100 p-4 text-sky-600">
+              <i class="fas fa-microchip text-3xl"></i>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-[0.25em] text-sky-600 font-bold">Diagnostics</p>
+              <h2 class="mt-2 font-display text-3xl font-bold">OBD II Diagnostic Scanning</h2>
+              <p class="mt-4 text-slate-600 leading-7">
+                Identify engine faults, sensor issues, and warning light causes quickly with workshop-grade scan tools.
+              </p>
+              <a href="https://wa.me/16038170479?text=Hello%20Eastern%20Auto%20Spares,%20I%20would%20like%20to%20book%20an%20OBD%20II%20diagnostic%20scan." class="mt-6 inline-block rounded-2xl bg-sky-600 px-6 py-3 font-bold text-white hover:bg-sky-700">
+                Request Scan
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-[28px] bg-gradient-to-br from-amber-50 via-white to-orange-50 p-8 shadow-soft border border-amber-200">
+          <div class="flex items-start gap-4">
+            <div class="rounded-2xl bg-amber-100 p-4 text-amber-600">
+              <i class="fas fa-gem text-3xl"></i>
+            </div>
+            <div>
+              <p class="text-xs uppercase tracking-[0.25em] text-amber-600 font-bold">Rewards</p>
+              <h2 class="mt-2 font-display text-3xl font-bold">Loyalty Card Program</h2>
+              <p class="mt-4 text-slate-600 leading-7">
+                Returning customers can qualify for special service and selected parts discounts, including member-only price benefits.
+              </p>
+              <div class="mt-6 inline-flex rounded-full bg-amber-500 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-white">
+                Coming Soon
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="mt-16 border-t border-slate-200 bg-white/80 backdrop-blur-md">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 py-12 grid gap-8 md:grid-cols-3">
+      <div>
+        <h4 class="font-display text-xl font-bold text-brand-600 uppercase">Eastern Auto Spares</h4>
+        <p class="mt-4 text-sm leading-7 text-slate-600">
+          Top-tier Japanese spare parts procurement and workshop support for Chipinge and the wider Manicaland region.
+        </p>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Headquarters</h4>
+        <p class="mt-4 text-sm font-semibold text-slate-700">Chipinge Town, Zimbabwe</p>
+        <p class="mt-2 text-sm text-slate-500">Director: Samuel Takwirira</p>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-[0.25em] text-slate-500">Digital Contact</h4>
+        <a href="mailto:info@easternautoparts.com" class="mt-4 block text-sm font-bold text-brand-600 underline">
+          info@easternautoparts.com
+        </a>
+        <a href="https://wa.me/16038170479" class="mt-2 block text-sm font-bold text-emerald-600">
+          +1 603 817 0479
+        </a>
+      </div>
+    </div>
+    <div class="border-t border-slate-200 py-5 text-center text-[11px] uppercase tracking-[0.25em] text-slate-400">
+      © 2026 Eastern Auto Spares. All Rights Reserved.
+    </div>
+  </footer>
+
+  <div id="staffPanel" class="hidden fixed inset-0 z-[80] bg-slate-950/70 p-4 backdrop-blur-sm">
+    <div class="mx-auto mt-8 max-w-lg rounded-[28px] bg-white p-6 sm:p-8 shadow-soft">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-xs uppercase tracking-[0.25em] text-amber-600 font-bold">Staff Console</p>
+          <h3 class="mt-2 font-display text-3xl font-bold">Adjust Prices by %</h3>
+        </div>
+        <button onclick="toggleStaffPanel()" class="rounded-full bg-slate-100 h-11 w-11 text-slate-500 hover:text-slate-800">
+          <i class="fas fa-xmark"></i>
+        </button>
+      </div>
+
+      <div id="staffLoginBox" class="mt-6">
+        <label class="text-sm font-bold text-slate-700">Staff Passcode</label>
+        <input id="staffPasscode" type="password" placeholder="Enter staff code" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none" />
+        <button onclick="unlockStaffMode()" class="mt-4 w-full rounded-2xl bg-slate-950 px-5 py-4 font-bold text-white hover:bg-slate-800">
+          Unlock Staff Mode
+        </button>
+        <p class="mt-3 text-xs text-slate-500">Demo code: <strong>EAS2026</strong></p>
+      </div>
+
+      <div id="staffControls" class="hidden mt-6">
+        <div class="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
+          Staff mode is active. These controls affect the displayed retail prices for all parts.
+        </div>
+
+        <div class="mt-5">
+          <label class="text-sm font-bold text-slate-700">Adjustment Percentage</label>
+          <input id="staffPercent" type="number" value="10" min="1" max="90" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none" />
+        </div>
+
+        <div class="mt-5 grid sm:grid-cols-3 gap-3">
+          <button onclick="applyPriceChange('increase')" class="rounded-2xl bg-emerald-600 px-4 py-4 font-bold text-white hover:bg-emerald-700">
+            Increase
+          </button>
+          <button onclick="applyPriceChange('decrease')" class="rounded-2xl bg-brand-600 px-4 py-4 font-bold text-white hover:bg-brand-700">
+            Decrease
+          </button>
+          <button onclick="resetPriceChange()" class="rounded-2xl border border-slate-300 px-4 py-4 font-bold text-slate-700 hover:bg-slate-50">
+            Reset
+          </button>
+        </div>
+
+        <button onclick="lockStaffMode()" class="mt-4 w-full rounded-2xl bg-slate-950 px-4 py-4 font-bold text-white hover:bg-slate-800">
+          Lock Staff Mode
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const WHATSAPP_NUMBER = "16038170479";
+    const STAFF_CODE = "EAS2026";
+
+    let activeTab = "inventory";
+    let priceAdjustment = Number(localStorage.getItem("eas-price-adjustment") || 0);
+    let staffUnlocked = localStorage.getItem("eas-staff-mode") === "true";
+    let cart = JSON.parse(localStorage.getItem("eas-cart") || "[]");
+
+    const products = [
+      { id: 1, name: "Blade Fuse Pack", category: "Electrical", vehicle: "Universal", price: 8, stock: "In Stock", icon: "fa-bolt", color: "from-yellow-400 to-orange-500" },
+      { id: 2, name: "Engine Oil 5L", category: "Fluids", vehicle: "Universal", price: 29, stock: "In Stock", icon: "fa-oil-can", color: "from-slate-700 to-slate-900" },
+      { id: 3, name: "2-Ton Hydraulic Jack", category: "Tools", vehicle: "Universal", price: 65, stock: "Ready", icon: "fa-screwdriver-wrench", color: "from-sky-500 to-slate-800" },
+      { id: 4, name: "Jumper Cables 600A", category: "Emergency", vehicle: "Universal", price: 24, stock: "In Stock", icon: "fa-car-battery", color: "from-red-500 to-orange-600" },
+      { id: 5, name: "Toyota Front Brake Pad Set", category: "Brakes", vehicle: "Toyota", price: 38, stock: "In Stock", icon: "fa-circle-stop", color: "from-brand-500 to-brand-700" },
+      { id: 6, name: "Oil Filter M20x1.5", category: "Engine", vehicle: "Toyota", price: 14, stock: "In Stock", icon: "fa-filter", color: "from-slate-600 to-slate-900" },
+      { id: 7, name: "Outer CV Joint 23-26 Spline", category: "Suspension", vehicle: "Toyota", price: 52, stock: "Limited", icon: "fa-gear", color: "from-indigo-500 to-slate-800" },
+      { id: 8, name: "Honda Fit Brake Pads", category: "Brakes", vehicle: "Honda", price: 36, stock: "In Stock", icon: "fa-circle-stop", color: "from-rose-500 to-red-700" },
+      { id: 9, name: "Ignition Coil", category: "Electrical", vehicle: "Honda", price: 41, stock: "In Stock", icon: "fa-plug-circle-bolt", color: "from-amber-500 to-red-600" },
+      { id: 10, name: "Shock Absorber Strut", category: "Suspension", vehicle: "Mazda", price: 72, stock: "In Stock", icon: "fa-arrows-up-down", color: "from-blue-500 to-slate-900" },
+      { id: 11, name: "Wheel Bearing 35x68x37", category: "Suspension", vehicle: "Mazda", price: 33, stock: "In Stock", icon: "fa-compact-disc", color: "from-cyan-500 to-blue-700" },
+      { id: 12, name: "Air Filter Panel 250x200", category: "Engine", vehicle: "Nissan", price: 16, stock: "In Stock", icon: "fa-wind", color: "from-emerald-500 to-slate-800" },
+      { id: 13, name: "Water Pump", category: "Cooling", vehicle: "Nissan", price: 49, stock: "In Stock", icon: "fa-droplet", color: "from-sky-500 to-cyan-700" },
+      { id: 14, name: "Hiace Fuel Filter", category: "Engine", vehicle: "Toyota", price: 18, stock: "In Stock", icon: "fa-filter-circle-dollar", color: "from-lime-500 to-emerald-700" },
+      { id: 15, name: "Aluminum Radiator", category: "Cooling", vehicle: "Toyota", price: 95, stock: "Order Ready", icon: "fa-fan", color: "from-slate-500 to-slate-900" },
+      { id: 16, name: "Spark Plug Set", category: "Electrical", vehicle: "Toyota", price: 22, stock: "In Stock", icon: "fa-bolt-lightning", color: "from-orange-500 to-amber-700" }
+    ];
+
+    function formatMoney(value) {
+      return `$${value.toFixed(2)}`;
+    }
+
+    function getAdjustedPrice(basePrice) {
+      return +(basePrice * (1 + priceAdjustment / 100)).toFixed(2);
+    }
+
+    function showTab(tabName) {
+      activeTab = tabName;
+      const inv = document.getElementById("inventory-content");
+      const ser = document.getElementById("services-content");
+      const tabInv = document.getElementById("tab-inv");
+      const tabSer = document.getElementById("tab-ser");
+
+      if (tabName === "inventory") {
+        inv.classList.remove("hidden-content");
+        ser.classList.add("hidden-content");
+        tabInv.classList.add("tab-active");
+        tabSer.classList.remove("tab-active");
+      } else {
+        inv.classList.add("hidden-content");
+        ser.classList.remove("hidden-content");
+        tabSer.classList.add("tab-active");
+        tabInv.classList.remove("tab-active");
+      }
+    }
+
+    function renderProducts() {
+      const search = document.getElementById("searchInput").value.toLowerCase().trim();
+      const category = document.getElementById("categoryFilter").value;
+      const vehicle = document.getElementById("vehicleFilter").value;
+      const grid = document.getElementById("productsGrid");
+
+      const filtered = products.filter(product => {
+        const matchesSearch =
+          product.name.toLowerCase().includes(search) ||
+          product.category.toLowerCase().includes(search) ||
+          product.vehicle.toLowerCase().includes(search);
+
+        const matchesCategory = category === "all" || product.category === category;
+        const matchesVehicle = vehicle === "all" || product.vehicle === vehicle;
+
+        return matchesSearch && matchesCategory && matchesVehicle;
+      });
+
+      document.getElementById("resultCount").textContent = filtered.length;
+
+      grid.innerHTML = filtered.map(product => {
+        const adjustedPrice = getAdjustedPrice(product.price);
+        return `
+          <article class="part-card overflow-hidden rounded-[26px] bg-white shadow-soft transition duration-300">
+            <div class="h-44 bg-gradient-to-br ${product.color} flex items-center justify-center text-white">
+              <i class="fas ${product.icon} text-5xl opacity-95"></i>
+            </div>
+            <div class="p-5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded-full bg-brand-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-brand-700">${product.category}</span>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-600">${product.vehicle}</span>
+              </div>
+
+              <h3 class="mt-4 text-xl font-bold text-slate-900">${product.name}</h3>
+              <p class="mt-2 text-sm text-slate-500">${product.stock}</p>
+
+              <div class="mt-5 flex items-end justify-between gap-4">
+                <div>
+                  <div class="text-xs uppercase tracking-[0.2em] text-slate-400">Price</div>
+                  <div class="text-2xl font-display font-bold text-slate-900">${formatMoney(adjustedPrice)}</div>
+                </div>
+                <button onclick="addToCart(${product.id})" class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-brand-600">
+                  Add to Cart
+                </button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function addToCart(productId) {
+      const product = products.find(item => item.id === productId);
+      const existing = cart.find(item => item.id === productId);
+
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cart.push({ id: product.id, name: product.name, price: product.price, qty: 1 });
+      }
+
+      persistCart();
+      renderCart();
+    }
+
+    function changeQty(productId, delta) {
+      const item = cart.find(entry => entry.id === productId);
+      if (!item) return;
+
+      item.qty += delta;
+      if (item.qty <= 0) {
+        cart = cart.filter(entry => entry.id !== productId);
+      }
+
+      persistCart();
+      renderCart();
+    }
+
+    function clearCart() {
+      cart = [];
+      persistCart();
+      renderCart();
+    }
+
+    function persistCart() {
+      localStorage.setItem("eas-cart", JSON.stringify(cart));
+    }
+
+    function renderCart() {
+      const cartItems = document.getElementById("cartItems");
+      const emptyState = document.getElementById("emptyCartState");
+      const cartCount = document.getElementById("cartCount");
+
+      cartCount.textContent = cart.reduce((sum, item) => sum + item.qty, 0);
+
+      if (cart.length === 0) {
+        cartItems.innerHTML = "";
+        emptyState.classList.remove("hidden");
+      } else {
+        emptyState.classList.add("hidden");
+        cartItems.innerHTML = cart.map(item => {
+          const adjusted = getAdjustedPrice(item.price);
+          return `
+            <div class="rounded-2xl border border-slate-200 p-4">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <h4 class="font-bold text-slate-900">${item.name}</h4>
+                  <p class="mt-1 text-sm text-slate-500">${formatMoney(adjusted)} each</p>
+                </div>
+                <div class="text-right">
+                  <div class="font-bold text-slate-900">${formatMoney(adjusted * item.qty)}</div>
+                  <div class="mt-3 inline-flex items-center rounded-full border border-slate-200">
+                    <button onclick="changeQty(${item.id}, -1)" class="px-3 py-2 text-slate-600">-</button>
+                    <span class="px-3 py-2 text-sm font-bold">${item.qty}</span>
+                    <button onclick="changeQty(${item.id}, 1)" class="px-3 py-2 text-slate-600">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      updateTotals();
+      updateWhatsAppLink();
+    }
+
+    function updateTotals() {
+      const subtotal = cart.reduce((sum, item) => sum + getAdjustedPrice(item.price) * item.qty, 0);
+      document.getElementById("subtotalValue").textContent = formatMoney(subtotal);
+      document.getElementById("totalValue").textContent = formatMoney(subtotal);
+      document.getElementById("adjustmentValue").textContent = `${priceAdjustment}%`;
+      document.getElementById("adjustmentLabel").textContent = `${priceAdjustment}%`;
+
+      const pricingStatus = document.getElementById("pricingStatus");
+      const badge = document.getElementById("staffModeBadge");
+
+      if (priceAdjustment > 0) {
+        pricingStatus.textContent = "Raised Retail Pricing";
+      } else if (priceAdjustment < 0) {
+        pricingStatus.textContent = "Discounted Retail Pricing";
+      } else {
+        pricingStatus.textContent = "Standard Retail";
+      }
+
+      if (staffUnlocked) {
+        badge.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
+    }
+
+    function updateWhatsAppLink() {
+      const name = document.getElementById("customerName").value.trim();
+      const phone = document.getElementById("customerPhone").value.trim();
+      const location = document.getElementById("customerLocation").value.trim();
+      const notes = document.getElementById("customerNotes").value.trim();
+      const total = cart.reduce((sum, item) => sum + getAdjustedPrice(item.price) * item.qty, 0);
+
+      const lines = cart.length
+        ? cart.map(item => `- ${item.name} x${item.qty} = ${formatMoney(getAdjustedPrice(item.price) * item.qty)}`).join("\n")
+        : "No items selected yet";
+
+      const message = `Hello Eastern Auto Spares,%0A%0AI would like to place an order.%0A%0ACustomer: ${encodeURIComponent(name || "Not provided")}%0APhone: ${encodeURIComponent(phone || "Not provided")}%0ALocation: ${encodeURIComponent(location || "Not provided")}%0A%0AItems:%0A${encodeURIComponent(lines)}%0A%0APrice adjustment: ${encodeURIComponent(priceAdjustment + "%")}%0ATotal: ${encodeURIComponent(formatMoney(total))}%0A%0AVehicle / Notes:%0A${encodeURIComponent(notes || "None")}`;
+
+      document.getElementById("whatsappOrderBtn").href = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+    }
+
+    function toggleStaffPanel() {
+      document.getElementById("staffPanel").classList.toggle("hidden");
+      syncStaffView();
+    }
+
+    function unlockStaffMode() {
+      const code = document.getElementById("staffPasscode").value.trim();
+      if (code !== STAFF_CODE) {
+        alert("Incorrect staff passcode.");
+        return;
+      }
+      staffUnlocked = true;
+      localStorage.setItem("eas-staff-mode", "true");
+      syncStaffView();
+      updateTotals();
+    }
+
+    function lockStaffMode() {
+      staffUnlocked = false;
+      localStorage.setItem("eas-staff-mode", "false");
+      syncStaffView();
+      updateTotals();
+    }
+
+    function syncStaffView() {
+      document.getElementById("staffLoginBox").classList.toggle("hidden", staffUnlocked);
+      document.getElementById("staffControls").classList.toggle("hidden", !staffUnlocked);
+    }
+
+    function applyPriceChange(mode) {
+      if (!staffUnlocked) return;
+
+      const percent = Number(document.getElementById("staffPercent").value);
+      if (!percent || percent < 1 || percent > 90) {
+        alert("Enter a percentage between 1 and 90.");
+        return;
+      }
+
+      priceAdjustment = mode === "increase" ? percent : -percent;
+      localStorage.setItem("eas-price-adjustment", priceAdjustment);
+      renderProducts();
+      renderCart();
+    }
+
+    function resetPriceChange() {
+      if (!staffUnlocked) return;
+      priceAdjustment = 0;
+      localStorage.setItem("eas-price-adjustment", priceAdjustment);
+      renderProducts();
+      renderCart();
+    }
+
+    ["customerName", "customerPhone", "customerLocation", "customerNotes"].forEach(id => {
+      document.addEventListener("input", event => {
+        if (event.target && event.target.id === id) {
+          updateWhatsAppLink();
+        }
+      });
+    });
+
+    renderProducts();
+    renderCart();
+    updateTotals();
+    syncStaffView();
+  </script>
 </body>
 </html>

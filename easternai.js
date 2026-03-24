@@ -1,31 +1,38 @@
 const QUERY_SYNONYMS = {
-  brake: ["brakes", "braking", "pads", "pad", "stopping"],
-  oil: ["engine oil", "lubricant", "service", "maintenance"],
-  cv: ["joint", "axle", "outer cv", "cv joint"],
-  ignition: ["coil", "spark", "electrical"],
-  cooling: ["cool", "water pump", "temperature", "overheating", "radiator"],
-  tool: ["jack", "workshop", "lift"],
-  suspension: ["shock", "joint", "ride", "cv"],
-  toyota: ["hilux", "corolla", "toyota"],
-  honda: ["fit", "crv", "civic", "honda"],
-  nissan: ["hardbody", "np200", "nissan"],
-  mazda: ["bt50", "demio", "mazda"]
+  brake: ["brakes", "braking", "pads", "pad", "disc", "discs", "shoes", "shoe"],
+  oil: ["engine oil", "lubricant", "service", "maintenance", "filter", "atf"],
+  cv: ["joint", "axle", "outer cv", "cv joint", "tripod", "boot"],
+  ignition: ["coil", "spark", "electrical", "plug", "starter", "alternator"],
+  cooling: ["cool", "water pump", "temperature", "overheating", "radiator", "fan", "coolant"],
+  tool: ["jack", "workshop", "lift", "spanner", "screwdriver"],
+  suspension: ["shock", "joint", "ride", "cv", "ball joint", "tie rod", "bearing"],
+  fluid: ["fluid", "atf", "brake fluid", "power steering", "coolant"],
+  tyre: ["tyre", "wheel", "wheel nut", "wheel stud", "valve"],
+  toyota: ["toyota", "corolla", "wish", "hiace"],
+  honda: ["honda", "fit", "civic", "crv"],
+  nissan: ["nissan", "ad", "ad van"],
+  mazda: ["mazda", "demio"]
 };
 
 const SUGGESTED_PROMPTS = [
-  "Toyota braking parts",
-  "Engine oil for service",
-  "Cooling parts for Nissan",
-  "Workshop tools in stock",
-  "Suspension part for Toyota"
+  "Engine oil for all cars",
+  "Toyota Corolla braking parts",
+  "Honda Fit ignition parts",
+  "Nissan AD Van cooling parts",
+  "Workshop tools in stock"
 ];
 
 function normalize(value) {
-  return String(value || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  return String(value || "").toLowerCase().replace(/[^a-z0-9\s/-]/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function tokenize(value) {
   return normalize(value).split(" ").filter(Boolean);
+}
+
+function getVehicleNames(part) {
+  if (Array.isArray(part.vehicles) && part.vehicles.length) return part.vehicles;
+  return part.vehicle ? [part.vehicle] : [];
 }
 
 function expandTokens(tokens) {
@@ -44,12 +51,14 @@ function expandTokens(tokens) {
 }
 
 function scorePartAgainstTokens(part, tokens) {
+  const vehicleNames = getVehicleNames(part);
   const haystack = {
     name: normalize(part.name),
     category: normalize(part.category),
-    vehicle: normalize(part.vehicle),
+    vehicle: normalize(vehicleNames.join(" ")),
     description: normalize(part.description),
-    id: normalize(part.partId)
+    id: normalize(part.partId),
+    barcode: normalize(part.barcode)
   };
 
   let score = 0;
@@ -57,29 +66,30 @@ function scorePartAgainstTokens(part, tokens) {
 
   tokens.forEach((token) => {
     if (haystack.name.includes(token)) {
-      score += 7;
+      score += 8;
       reasons.push(`matches "${token}" in the part name`);
     }
     if (haystack.category.includes(token)) {
       score += 5;
-      reasons.push(`aligns with the ${part.category} category`);
+      reasons.push(`fits the ${part.category} category`);
     }
     if (haystack.vehicle.includes(token)) {
-      score += 6;
-      reasons.push(`fits the ${part.vehicle} vehicle filter`);
+      score += 7;
+      reasons.push(`covers ${vehicleNames.join(", ")}`);
     }
     if (haystack.description.includes(token)) {
       score += 3;
-      reasons.push(`description mentions "${token}"`);
+      reasons.push(`description references "${token}"`);
     }
-    if (haystack.id.includes(token)) {
-      score += 2;
-      reasons.push(`part ID references "${token}"`);
+    if (haystack.id.includes(token) || haystack.barcode.includes(token)) {
+      score += 3;
+      reasons.push(`matches an inventory code`);
     }
   });
 
   if (part.stock === "In Stock") score += 2;
-  if (part.stock === "Order Ready") score += 1;
+  if (part.stockQty >= 20) score += 2;
+  if (vehicleNames.length > 1) score += 1;
 
   return {
     score,
@@ -99,22 +109,18 @@ export function runEasternAISearch(query, parts, filters = {}) {
     filteredParts = filteredParts.filter((part) => part.category === categoryFilter);
   }
   if (vehicleFilter !== "all") {
-    filteredParts = filteredParts.filter((part) => part.vehicle === vehicleFilter);
+    filteredParts = filteredParts.filter((part) => getVehicleNames(part).includes(vehicleFilter));
   }
 
   let ranked = filteredParts.map((part) => {
     const { score, reasons } = scorePartAgainstTokens(part, tokens);
-    return {
-      part,
-      score,
-      reasons
-    };
+    return { part, score, reasons };
   });
 
   if (normalizedQuery) {
     ranked = ranked
       .filter((entry) => entry.score > 0)
-      .sort((left, right) => right.score - left.score || left.part.price - right.part.price);
+      .sort((left, right) => right.score - left.score || (right.part.stockQty || 0) - (left.part.stockQty || 0));
   } else {
     ranked = ranked
       .map((entry, index) => ({ ...entry, score: entry.score + Math.max(0, 10 - index) }))
@@ -123,6 +129,7 @@ export function runEasternAISearch(query, parts, filters = {}) {
 
   const results = ranked.map((entry) => ({
     ...entry.part,
+    vehicles: getVehicleNames(entry.part),
     aiScore: entry.score,
     aiReasons: entry.reasons
   }));
@@ -130,26 +137,24 @@ export function runEasternAISearch(query, parts, filters = {}) {
   const topResults = results.slice(0, 3);
   const searchLabel = normalizedQuery ? `"${query.trim()}"` : "your current filters";
 
-  let summary = `EasternAI is standing by. Search by part name, vehicle, or problem and it will rank the strongest matches here.`;
+  let summary = "EasternAI is standing by. Search by part name, vehicle, symptom, or barcode and it will rank the strongest matches here.";
   if (normalizedQuery && results.length) {
-    summary = `EasternAI found ${results.length} match${results.length === 1 ? "" : "es"} for ${searchLabel} and ranked ${topResults[0].name} as the strongest fit.`;
+    const topVehicles = topResults[0].vehicles.filter((vehicle) => vehicle !== "Universal");
+    const vehicleSummary = topVehicles.length ? ` It is currently mapped to ${topVehicles.join(", ")}.` : "";
+    summary = `EasternAI found ${results.length} match${results.length === 1 ? "" : "es"} for ${searchLabel} and ranked ${topResults[0].name} as the strongest fit.${vehicleSummary}`;
   } else if (normalizedQuery && !results.length) {
-    summary = `EasternAI could not find a strong direct match for ${searchLabel}. Try a vehicle, category, or a simpler symptom such as brake, oil, cooling, or ignition.`;
+    summary = `EasternAI could not find a strong direct match for ${searchLabel}. Try a car model, category, barcode, or a simpler part phrase such as brake, oil, cooling, tyre, or ignition.`;
   } else if (!normalizedQuery) {
-    summary = `EasternAI is showing the best available parts for your current filters. Use the search box and button to retrieve something specific.`;
+    summary = "EasternAI is showing the best available parts for your current filters. Use the search box and button to retrieve something specific.";
   }
-
-  const mode = normalizedQuery ? "Retrieving" : "Ready";
-  const badge = normalizedQuery ? "EasternAI Active" : "Awaiting Search";
-  const matchCountLabel = normalizedQuery ? `${results.length} found` : "All parts";
 
   return {
     results,
     topResults,
     summary,
-    mode,
-    badge,
-    matchCountLabel,
+    mode: normalizedQuery ? "Retrieving" : "Ready",
+    badge: normalizedQuery ? "EasternAI Active" : "Awaiting Search",
+    matchCountLabel: normalizedQuery ? `${results.length} found` : "All parts",
     suggestions: SUGGESTED_PROMPTS
   };
 }

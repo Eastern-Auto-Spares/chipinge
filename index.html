@@ -238,11 +238,6 @@
               <label class="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 sm:text-[11px]">Vehicle</label>
               <select id="vehicleFilter" class="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3 text-sm outline-none">
                 <option value="all">All Vehicles</option>
-                <option value="Universal">Universal</option>
-                <option value="Toyota">Toyota</option>
-                <option value="Honda">Honda</option>
-                <option value="Mazda">Mazda</option>
-                <option value="Nissan">Nissan</option>
               </select>
             </div>
 
@@ -354,83 +349,38 @@
       <div class="rounded-[28px] bg-white p-5 shadow-lg sm:p-6">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <div class="text-[10px] font-semibold uppercase tracking-[0.25em] text-orange-500 sm:text-[11px]">Staff Panel</div>
-            <h3 class="mt-1 font-display text-2xl font-bold sm:text-3xl">Add New Part</h3>
+            <div class="text-[10px] font-semibold uppercase tracking-[0.25em] text-orange-500 sm:text-[11px]">Staff Stock Desk</div>
+            <h3 class="mt-1 font-display text-2xl font-bold sm:text-3xl">Inventory Control For Desktop Teams</h3>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Create new inventory entries with auto-generated part IDs and proper category classification.
+              Use the stock desk to review inventory, scan or type barcodes, and add new stock rows without editing code. The customer storefront stays lean for mobile while the staff tools stay optimized for bigger screens.
             </p>
           </div>
+          <button id="openStockDeskBtn" class="hidden rounded-2xl bg-slate-950 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-600 lg:block">
+            Open Stock Desk
+          </button>
         </div>
 
-        <form id="addPartForm" class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <div>
-            <label class="text-sm font-medium text-slate-700">Part Name</label>
-            <input id="partName" type="text" required class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none" placeholder="Front Brake Pad Set" />
+        <div class="mt-6 overflow-hidden rounded-[24px] border border-slate-200">
+          <div class="hidden bg-slate-950 px-5 py-4 text-xs font-semibold uppercase tracking-[0.22em] text-slate-300 lg:grid lg:grid-cols-[1.1fr_0.9fr_0.9fr_90px_140px_130px]">
+            <span>Part</span>
+            <span>Category</span>
+            <span>Vehicles</span>
+            <span>Qty</span>
+            <span>Barcode</span>
+            <span>Status</span>
           </div>
+          <div id="stockTableBody" class="divide-y divide-slate-200"></div>
+        </div>
 
-          <div>
-            <label class="text-sm font-medium text-slate-700">Category</label>
-            <select id="partCategory" required class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none">
-              <option value="">Select Category</option>
-              <option>Brakes</option>
-              <option>Suspension</option>
-              <option>Electrical</option>
-              <option>Cooling</option>
-              <option>Engine</option>
-              <option>Fluids</option>
-              <option>Tools</option>
-              <option>Emergency</option>
-              <option>Tyres</option>
-              <option>Filters</option>
-            </select>
+        <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-600">
+            <span id="stockTableCount" class="font-semibold text-slate-900">0</span>
+            inventory lines loaded.
           </div>
-
-          <div>
-            <label class="text-sm font-medium text-slate-700">Vehicle</label>
-            <select id="partVehicle" required class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none">
-              <option value="">Select Vehicle</option>
-              <option>Universal</option>
-              <option>Toyota</option>
-              <option>Honda</option>
-              <option>Mazda</option>
-              <option>Nissan</option>
-            </select>
+          <div id="addPartStatus" class="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-600">
+            Staff actions appear here.
           </div>
-
-          <div>
-            <label class="text-sm font-medium text-slate-700">Price (USD)</label>
-            <input id="partPrice" type="number" min="0" step="0.01" required class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none" placeholder="38" />
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-slate-700">Stock Status</label>
-            <select id="partStock" required class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none">
-              <option>In Stock</option>
-              <option>Low Stock</option>
-              <option>Order Ready</option>
-              <option>Out of Stock</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="text-sm font-medium text-slate-700">Image URL</label>
-            <input id="partImage" type="url" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none" placeholder="https://..." />
-          </div>
-
-          <div class="md:col-span-2 xl:col-span-3">
-            <label class="text-sm font-medium text-slate-700">Description</label>
-            <textarea id="partDescription" rows="3" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none" placeholder="Short part description..."></textarea>
-          </div>
-
-          <div class="md:col-span-2 xl:col-span-3 flex flex-col gap-3 sm:flex-row">
-            <button type="submit" class="rounded-2xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800">
-              Add Part
-            </button>
-            <div id="addPartStatus" class="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-600">
-              Staff actions appear here.
-            </div>
-          </div>
-        </form>
+        </div>
       </div>
     </section>
 
@@ -567,6 +517,86 @@
           Logout
         </button>
       </div>
+    </div>
+  </div>
+
+  <div id="stockDeskModal" class="hidden fixed inset-0 z-[110] bg-slate-950/70 p-4 backdrop-blur-sm">
+    <div class="mx-auto mt-6 max-w-5xl rounded-[28px] bg-white p-5 shadow-2xl sm:mt-10 sm:p-6">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <div class="text-[10px] font-semibold uppercase tracking-[0.25em] text-orange-500 sm:text-[11px]">Desktop Stock Desk</div>
+          <h3 class="mt-1 font-display text-2xl font-bold sm:text-3xl">Add Stock Without Writing Code</h3>
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            Scan into the barcode field, assign compatible cars, and save. New stock becomes searchable on the storefront and visible to EasternAI.
+          </p>
+        </div>
+        <button id="closeStockDeskBtn" class="h-10 w-10 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="addPartForm" class="mt-6 grid gap-4 lg:grid-cols-2">
+        <div>
+          <label class="text-sm font-medium text-slate-700">Part Name</label>
+          <input id="partName" type="text" required class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none" placeholder="Engine Oil 5L 10W30 / 20W50" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-slate-700">Category</label>
+          <select id="partCategory" required class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none">
+            <option value="">Select Category</option>
+            <option>Brakes</option>
+            <option>Suspension</option>
+            <option>Electrical</option>
+            <option>Cooling</option>
+            <option>Engine</option>
+            <option>Fluids</option>
+            <option>Tools</option>
+            <option>Emergency</option>
+            <option>Tyres</option>
+            <option>Filters</option>
+          </select>
+        </div>
+
+        <div class="lg:col-span-2">
+          <label class="text-sm font-medium text-slate-700">Compatible Vehicles</label>
+          <input id="partVehicle" type="text" required class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none" placeholder="Universal, Toyota Corolla, Honda Fit" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-slate-700">Stock Quantity</label>
+          <input id="partQty" type="number" min="0" step="1" required class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none" placeholder="60" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-slate-700">Barcode / Scanner Input</label>
+          <input id="partBarcode" type="text" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none" placeholder="Scan barcode here" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-slate-700">Price (USD, optional)</label>
+          <input id="partPrice" type="number" min="0" step="0.01" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none" placeholder="29" />
+        </div>
+
+        <div>
+          <label class="text-sm font-medium text-slate-700">Image URL (optional)</label>
+          <input id="partImage" type="url" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none" placeholder="https://..." />
+        </div>
+
+        <div class="lg:col-span-2">
+          <label class="text-sm font-medium text-slate-700">Description</label>
+          <textarea id="partDescription" rows="3" class="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none" placeholder="Short stock note or fitment summary..."></textarea>
+        </div>
+
+        <div class="lg:col-span-2 flex flex-col gap-3 sm:flex-row">
+          <button type="submit" class="rounded-2xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800">
+            Save Stock Line
+          </button>
+          <div class="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-600">
+            Tip: barcode scanners usually type into the active input automatically, so click the barcode field and scan.
+          </div>
+        </div>
+      </form>
     </div>
   </div>
 

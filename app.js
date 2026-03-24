@@ -21,7 +21,7 @@ import {
   serverTimestamp,
   runTransaction
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
-import { demoParts, getCategoryGradient } from "./parts-data.js";
+import { demoParts, getCategoryGradient, getVehicleOptions, inferStockState } from "./parts-data.js";
 import { runEasternAISearch } from "./easternai.js";
 
 const firebaseConfig = {
@@ -88,10 +88,16 @@ const els = {
   partName: document.getElementById("partName"),
   partCategory: document.getElementById("partCategory"),
   partVehicle: document.getElementById("partVehicle"),
+  partQty: document.getElementById("partQty"),
+  partBarcode: document.getElementById("partBarcode"),
   partPrice: document.getElementById("partPrice"),
-  partStock: document.getElementById("partStock"),
   partImage: document.getElementById("partImage"),
   partDescription: document.getElementById("partDescription"),
+  openStockDeskBtn: document.getElementById("openStockDeskBtn"),
+  closeStockDeskBtn: document.getElementById("closeStockDeskBtn"),
+  stockDeskModal: document.getElementById("stockDeskModal"),
+  stockTableBody: document.getElementById("stockTableBody"),
+  stockTableCount: document.getElementById("stockTableCount"),
   cartNavBtn: document.getElementById("cartNavBtn"),
   heroPrice1: document.getElementById("heroPrice1"),
   heroPrice2: document.getElementById("heroPrice2"),
@@ -111,6 +117,8 @@ let parts = [];
 let cart = JSON.parse(localStorage.getItem("eas-cart") || "[]");
 let activeSearchTerm = "";
 
+const LOCAL_PARTS_KEY = "eas-local-parts";
+
 const authErrorMessages = {
   "auth/configuration-not-found": "Secure account setup is not finished yet. Please complete the sign-in configuration in the admin console.",
   "auth/email-already-in-use": "That email already has an account. Try logging in instead.",
@@ -126,8 +134,81 @@ const authErrorMessages = {
   "auth/unauthorized-domain": "This site domain is not authorized for sign-in yet."
 };
 
+function normalizeVehicles(value) {
+  const entries = Array.isArray(value) ? value : String(value || "").split(",");
+  const vehicles = entries
+    .map((entry) => String(entry).trim())
+    .filter(Boolean);
+
+  return vehicles.length ? [...new Set(vehicles)] : ["Universal"];
+}
+
+function normalizePrice(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function normalizePart(rawPart, fallback = {}) {
+  const vehicles = normalizeVehicles(rawPart.vehicles || rawPart.vehicle || fallback.vehicle);
+  const stockQty = Number(rawPart.stockQty ?? fallback.stockQty ?? 0);
+  const price = normalizePrice(rawPart.price ?? fallback.price);
+  const barcode = String(rawPart.barcode || fallback.barcode || rawPart.partId || "").trim();
+
+  return {
+    ...rawPart,
+    price,
+    vehicles,
+    vehicle: vehicles.includes("Universal") ? "Universal" : vehicles[0],
+    stockQty,
+    stock: rawPart.stock || inferStockState(stockQty),
+    barcode,
+    description: rawPart.description || fallback.description || "",
+    imageUrl: rawPart.imageUrl || fallback.imageUrl || ""
+  };
+}
+
+function getPartKey(part) {
+  return part.barcode || part.partId || `${part.name}-${part.vehicle}`;
+}
+
+function mergeParts(...groups) {
+  const merged = new Map();
+
+  groups.flat().forEach((rawPart) => {
+    const part = normalizePart(rawPart);
+    merged.set(getPartKey(part), part);
+  });
+
+  return [...merged.values()];
+}
+
+function getLocalParts() {
+  try {
+    const localParts = JSON.parse(localStorage.getItem(LOCAL_PARTS_KEY) || "[]");
+    return Array.isArray(localParts) ? localParts.map((part) => normalizePart(part)) : [];
+  } catch (error) {
+    console.warn("Local parts could not be parsed.", error);
+    return [];
+  }
+}
+
+function saveLocalPart(part) {
+  const localParts = mergeParts(getLocalParts(), [part]);
+  localStorage.setItem(LOCAL_PARTS_KEY, JSON.stringify(localParts));
+}
+
 function formatMoney(value) {
   return `$${Number(value || 0).toFixed(2)}`;
+}
+
+function formatPriceLabel(value) {
+  return value && Number(value) > 0 ? formatMoney(value) : "Quote";
+}
+
+function formatVehicleList(vehicles = []) {
+  const visibleVehicles = vehicles.filter(Boolean);
+  if (!visibleVehicles.length) return "Universal";
+  return visibleVehicles.join(", ");
 }
 
 function persistCart() {
@@ -139,7 +220,7 @@ function getCartCount() {
 }
 
 function getCartTotal() {
-  return cart.reduce((sum, item) => sum + Number(item.price) * item.qty, 0);
+  return cart.reduce((sum, item) => sum + Number(item.price || 0) * item.qty, 0);
 }
 
 function scrollToCheckout() {
@@ -162,6 +243,14 @@ function openAuthModal() {
 
 function closeAuthModal() {
   els.authModal.classList.add("hidden");
+}
+
+function openStockDeskModal() {
+  els.stockDeskModal.classList.remove("hidden");
+}
+
+function closeStockDeskModal() {
+  els.stockDeskModal.classList.add("hidden");
 }
 
 function setAuthMode(mode) {
@@ -220,10 +309,17 @@ function hydrateCategoryFilter() {
     .join("")}`;
 }
 
+function hydrateVehicleFilter() {
+  const vehicles = getVehicleOptions(parts).filter((vehicle) => vehicle !== "all");
+  els.vehicleFilter.innerHTML = `<option value="all">All Vehicles</option>${vehicles
+    .map((vehicle) => `<option value="${vehicle}">${vehicle}</option>`)
+    .join("")}`;
+}
+
 function sortParts(list, sort) {
   const sorted = [...list];
-  if (sort === "price-low") sorted.sort((left, right) => Number(left.price) - Number(right.price));
-  if (sort === "price-high") sorted.sort((left, right) => Number(right.price) - Number(left.price));
+  if (sort === "price-low") sorted.sort((left, right) => Number(left.price || Infinity) - Number(right.price || Infinity));
+  if (sort === "price-high") sorted.sort((left, right) => Number(right.price || 0) - Number(left.price || 0));
   if (sort === "name") sorted.sort((left, right) => (left.name || "").localeCompare(right.name || ""));
   if (sort === "featured") sorted.sort((left, right) => (left.partId || "").localeCompare(right.partId || ""));
   return sorted;
@@ -243,11 +339,21 @@ function renderEasternAI(searchResult) {
               <div class="flex items-start justify-between gap-3">
                 <div>
                   <div class="font-semibold text-white">${part.name}</div>
-                  <div class="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">${part.partId} • ${part.category} • ${part.vehicle}</div>
+                  <div class="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">${part.partId} • ${part.category}</div>
                 </div>
                 <div class="rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300">
                   Score ${part.aiScore}
                 </div>
+              </div>
+              <div class="mt-3 flex flex-wrap gap-2">
+                ${part.vehicles
+                  .slice(0, 4)
+                  .map(
+                    (vehicle) => `
+                      <span class="rounded-full bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-200">${vehicle}</span>
+                    `
+                  )
+                  .join("")}
               </div>
               <p class="mt-3 text-sm leading-6 text-slate-300">
                 ${part.aiReasons.length ? part.aiReasons.join(", ") : "Strong general match from the current catalog."}
@@ -256,7 +362,7 @@ function renderEasternAI(searchResult) {
           `
         )
         .join("")
-    : `<div class="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-slate-400">No direct EasternAI match yet. Try a vehicle, category, or a simpler phrase.</div>`;
+    : `<div class="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-slate-400">No direct EasternAI match yet. Try a vehicle, category, barcode, or a simpler phrase.</div>`;
 
   els.aiSuggestions.innerHTML = searchResult.suggestions
     .map(
@@ -301,27 +407,43 @@ function renderProducts(searchResult) {
           <div class="p-4 sm:p-5">
             <div class="flex flex-wrap gap-2">
               <span class="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-700 sm:text-[11px]">${part.category || "General"}</span>
-              <span class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600 sm:text-[11px]">${part.vehicle || "Universal"}</span>
+              <span class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600 sm:text-[11px]">${part.stock || "In Stock"}</span>
             </div>
 
             <div class="mt-3 flex items-start justify-between gap-3">
               <div>
                 <h3 class="text-base font-semibold text-slate-900 sm:text-lg">${part.name || "Unnamed Part"}</h3>
-                <p class="mt-1 text-[11px] uppercase tracking-[0.18em] text-slate-400 sm:text-xs">${part.partId || "Auto ID"}</p>
+                <p class="mt-1 text-[11px] uppercase tracking-[0.18em] text-slate-400 sm:text-xs">${part.partId || "Auto ID"} • ${part.barcode || "No barcode"}</p>
               </div>
               <div class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600 sm:text-[11px]">
-                ${part.stock || "In Stock"}
+                ${part.stockQty || 0} units
               </div>
             </div>
 
-            <p class="line-clamp-2 mt-3 text-sm leading-6 text-slate-500">
+            <p class="mt-3 text-sm leading-6 text-slate-500">
               ${part.description || "Quality spare part available for ordering and workshop use."}
             </p>
+
+            <div class="mt-3 flex flex-wrap gap-2">
+              ${part.vehicles
+                .slice(0, 4)
+                .map(
+                  (vehicle) => `
+                    <span class="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-orange-600 sm:text-[11px]">${vehicle}</span>
+                  `
+                )
+                .join("")}
+              ${
+                part.vehicles.length > 4
+                  ? `<span class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 sm:text-[11px]">+${part.vehicles.length - 4} more</span>`
+                  : ""
+              }
+            </div>
 
             <div class="mt-5 flex items-end justify-between gap-4">
               <div>
                 <div class="text-[10px] uppercase tracking-[0.16em] text-slate-400 sm:text-[11px]">Price</div>
-                <div class="font-display text-xl font-bold text-slate-900 sm:text-2xl">${formatMoney(part.price)}</div>
+                <div class="font-display text-xl font-bold text-slate-900 sm:text-2xl">${formatPriceLabel(part.price)}</div>
               </div>
               <button data-add-cart="${part.partId}" class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600">
                 Add
@@ -336,6 +458,31 @@ function renderProducts(searchResult) {
   els.productsGrid.querySelectorAll("[data-add-cart]").forEach((button) => {
     button.addEventListener("click", () => addToCart(button.dataset.addCart));
   });
+}
+
+function renderStockTable() {
+  const sortedParts = [...parts].sort((left, right) => (right.stockQty || 0) - (left.stockQty || 0));
+  els.stockTableCount.textContent = sortedParts.length;
+
+  els.stockTableBody.innerHTML = sortedParts
+    .map(
+      (part) => `
+        <div class="grid gap-2 px-4 py-4 text-sm text-slate-700 lg:grid-cols-[1.1fr_0.9fr_0.9fr_90px_140px_130px] lg:items-center lg:px-5">
+          <div>
+            <div class="font-semibold text-slate-900">${part.name}</div>
+            <div class="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">${part.partId}</div>
+          </div>
+          <div class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">${part.category}</div>
+          <div class="text-sm text-slate-600">${formatVehicleList(part.vehicles)}</div>
+          <div class="font-semibold text-slate-900">${part.stockQty || 0}</div>
+          <div class="text-xs uppercase tracking-[0.14em] text-slate-500">${part.barcode || "No barcode"}</div>
+          <div>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-700">${part.stock}</span>
+          </div>
+        </div>
+      `
+    )
+    .join("");
 }
 
 function performSearch(options = {}) {
@@ -354,12 +501,12 @@ function performSearch(options = {}) {
 
 function refreshHeroPrices() {
   const brake = parts.find((part) => part.name?.toLowerCase().includes("brake"));
-  const oil = parts.find((part) => part.name?.toLowerCase().includes("oil"));
+  const oil = parts.find((part) => part.name?.toLowerCase().includes("engine oil"));
   const cv = parts.find((part) => part.name?.toLowerCase().includes("cv"));
 
-  if (brake) els.heroPrice1.textContent = formatMoney(brake.price);
-  if (oil) els.heroPrice2.textContent = formatMoney(oil.price);
-  if (cv) els.heroPrice3.textContent = formatMoney(cv.price);
+  if (brake) els.heroPrice1.textContent = formatPriceLabel(brake.price);
+  if (oil) els.heroPrice2.textContent = formatPriceLabel(oil.price);
+  if (cv) els.heroPrice3.textContent = formatPriceLabel(cv.price);
 }
 
 function addToCart(partId) {
@@ -373,7 +520,7 @@ function addToCart(partId) {
     cart.push({
       partId: part.partId,
       name: part.name,
-      price: Number(part.price),
+      price: Number(part.price || 0),
       qty: 1
     });
   }
@@ -421,7 +568,7 @@ function renderCart() {
             <div class="min-w-0">
               <h4 class="text-sm font-semibold text-slate-900 sm:text-base">${item.name}</h4>
               <p class="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">${item.partId}</p>
-              <p class="mt-2 text-sm text-slate-500">${formatMoney(item.price)} each</p>
+              <p class="mt-2 text-sm text-slate-500">${item.price > 0 ? `${formatMoney(item.price)} each` : "Quoted at checkout"}</p>
             </div>
 
             <div class="text-right">
@@ -465,8 +612,6 @@ async function handleAuthSubmit(event) {
     if (authMode === "signup") {
       if (!name) {
         els.authStatus.textContent = "Full name is required for sign up.";
-        els.authSubmitBtn.disabled = false;
-        els.authSubmitBtn.classList.remove("opacity-60", "cursor-not-allowed");
         return;
       }
 
@@ -559,25 +704,50 @@ ${notes}`;
 async function createPartWithAutoId(data) {
   const counterRef = doc(db, "meta", "counters");
   const partsRef = collection(db, "parts");
+  let createdPart = null;
 
   await runTransaction(db, async (transaction) => {
     const counterSnap = await transaction.get(counterRef);
-    let current = 1000;
+    let current = 2000;
 
     if (counterSnap.exists()) {
-      current = Number(counterSnap.data().partNumber || 1000);
+      current = Number(counterSnap.data().partNumber || 2000);
     }
 
     const next = current + 1;
     const generatedPartId = `EAS-${String(next).padStart(4, "0")}`;
     const newPartRef = doc(partsRef);
 
-    transaction.set(counterRef, { partNumber: next }, { merge: true });
-    transaction.set(newPartRef, {
+    createdPart = normalizePart({
       ...data,
       partId: generatedPartId,
+      createdAt: new Date()
+    });
+
+    transaction.set(counterRef, { partNumber: next }, { merge: true });
+    transaction.set(newPartRef, {
+      ...createdPart,
       createdAt: serverTimestamp()
     });
+  });
+
+  return createdPart;
+}
+
+function createDeskPartFromForm() {
+  const vehicles = normalizeVehicles(els.partVehicle.value);
+  const stockQty = Number(els.partQty.value);
+
+  return normalizePart({
+    name: els.partName.value.trim(),
+    category: els.partCategory.value,
+    vehicles,
+    stockQty,
+    barcode: els.partBarcode.value.trim() || `EAS-${Date.now()}`,
+    price: normalizePrice(els.partPrice.value),
+    imageUrl: els.partImage.value.trim(),
+    description: els.partDescription.value.trim() || `${els.partName.value.trim()} stocked for ${formatVehicleList(vehicles)}.`,
+    createdAt: new Date()
   });
 }
 
@@ -589,29 +759,30 @@ async function handleAddPart(event) {
     return;
   }
 
-  const data = {
-    name: els.partName.value.trim(),
-    category: els.partCategory.value,
-    vehicle: els.partVehicle.value,
-    price: Number(els.partPrice.value),
-    stock: els.partStock.value,
-    imageUrl: els.partImage.value.trim(),
-    description: els.partDescription.value.trim()
-  };
+  const partData = createDeskPartFromForm();
 
-  if (!data.name || !data.category || !data.vehicle || !data.price) {
-    els.addPartStatus.textContent = "Please fill in all required fields.";
+  if (!partData.name || !partData.category || !partData.stockQty) {
+    els.addPartStatus.textContent = "Part name, category, compatible vehicles, and stock quantity are required.";
     return;
   }
 
   try {
-    await createPartWithAutoId(data);
-    els.addPartStatus.textContent = "Part added successfully with auto-generated ID.";
-    els.addPartForm.reset();
-    await loadParts();
+    const createdPart = await createPartWithAutoId(partData);
+    parts = mergeParts(parts, [createdPart]);
+    els.addPartStatus.textContent = "Stock line saved to live inventory.";
   } catch (error) {
-    els.addPartStatus.textContent = `Failed to add part: ${error.message}`;
+    saveLocalPart(partData);
+    parts = mergeParts(parts, [partData]);
+    els.addPartStatus.textContent = "Live save failed, so the stock line was saved locally on this device.";
   }
+
+  els.addPartForm.reset();
+  hydrateCategoryFilter();
+  hydrateVehicleFilter();
+  renderStockTable();
+  refreshHeroPrices();
+  performSearch({ preserveExistingTerm: true });
+  closeStockDeskModal();
 }
 
 function updateSessionUI() {
@@ -624,11 +795,11 @@ function updateSessionUI() {
 
   if (!isSignedIn) {
     els.sessionTitle.textContent = "Guest Browsing";
-    els.sessionText.textContent = "Browse parts, search with EasternAI, and log in to place orders online.";
+    els.sessionText.textContent = "Browse parts on your phone, search with EasternAI, and place orders fast when a car breaks down.";
     els.orderStatus.textContent = "Sign in to attach your account to orders. Guests can still prepare carts.";
   } else if (isStaff) {
     els.sessionTitle.textContent = "Staff Session";
-    els.sessionText.textContent = "You can manage parts, review EasternAI retrievals, and monitor the storefront as a live customer would.";
+    els.sessionText.textContent = "Desktop stock tools are unlocked. Review inventory, scan barcodes, and keep the customer storefront current.";
     els.orderStatus.textContent = "Staff account linked. Orders will include your signed-in identity.";
   } else {
     els.sessionTitle.textContent = "Customer Session";
@@ -670,6 +841,12 @@ function wireEvents() {
     closeAuthModal();
   });
 
+  els.openStockDeskBtn.addEventListener("click", openStockDeskModal);
+  els.closeStockDeskBtn.addEventListener("click", closeStockDeskModal);
+  els.stockDeskModal.addEventListener("click", (event) => {
+    if (event.target === els.stockDeskModal) closeStockDeskModal();
+  });
+
   els.cartNavBtn.addEventListener("click", scrollToCheckout);
   els.authModal.addEventListener("click", (event) => {
     if (event.target === els.authModal) closeAuthModal();
@@ -677,24 +854,25 @@ function wireEvents() {
 }
 
 async function loadParts() {
+  let remoteParts = [];
+
   try {
     const partsQuery = query(collection(db, "parts"), orderBy("createdAt", "desc"));
     const snapshot = await getDocs(partsQuery);
-
-    if (snapshot.empty) {
-      parts = [...demoParts];
-    } else {
-      parts = snapshot.docs.map((entry) => ({
+    remoteParts = snapshot.docs.map((entry) =>
+      normalizePart({
         id: entry.id,
         ...entry.data()
-      }));
-    }
+      })
+    );
   } catch (error) {
-    console.error(error);
-    parts = [...demoParts];
+    console.warn("Live parts could not be loaded.", error);
   }
 
+  parts = mergeParts(demoParts, remoteParts, getLocalParts());
   hydrateCategoryFilter();
+  hydrateVehicleFilter();
+  renderStockTable();
   refreshHeroPrices();
   performSearch({ preserveExistingTerm: true });
 }

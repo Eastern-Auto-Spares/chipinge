@@ -157,6 +157,7 @@ const STAFF_CODE = "AES26";
 const DIRECTOR_CODE = "EASD26";
 const DIRECTOR_EMAIL = "samueltakwirira@gmail.com";
 const ACCESS_ROLE_KEY = "eas-access-role";
+const DIRECTOR_SESSION_KEY = "eas-director-session";
 const ACTIVITY_LOG_KEY = "eas-activity-log";
 const PAY_AUTH_KEY = "eas-pay-authorization";
 const REVIEWS_STORAGE_KEY = "eas-public-reviews";
@@ -304,6 +305,23 @@ function getStoredJson(key, fallback) {
 
 function saveStoredJson(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function getDirectorSession() {
+  return getStoredJson(DIRECTOR_SESSION_KEY, null);
+}
+
+function setDirectorSession() {
+  saveStoredJson(DIRECTOR_SESSION_KEY, {
+    email: DIRECTOR_EMAIL,
+    name: "Samuel Takwirira",
+    role: "director",
+    signedInAt: new Date().toISOString()
+  });
+}
+
+function clearDirectorSession() {
+  localStorage.removeItem(DIRECTOR_SESSION_KEY);
 }
 
 function getSelectedVehicleOptions() {
@@ -990,8 +1008,13 @@ async function handleAuthSubmit(event) {
   const accessCode = els.staffCodeInput.value.trim();
   const isSignup = authMode === "signup";
 
-  if (!email || !password) {
-    els.authStatus.textContent = "Email and password are required.";
+  if (!email) {
+    els.authStatus.textContent = "Email is required.";
+    return;
+  }
+
+  if (accountType !== "director" && !password) {
+    els.authStatus.textContent = "Password is required.";
     return;
   }
 
@@ -1004,13 +1027,43 @@ async function handleAuthSubmit(event) {
       return;
     }
 
-    if (accountType === "staff" && accessCode !== STAFF_CODE) {
-      els.authStatus.textContent = "Employee access requires the correct access code.";
+    if (accountType === "director" && accessCode !== DIRECTOR_CODE) {
+      els.authStatus.textContent = "Director access requires the correct director code.";
       return;
     }
 
-    if (accountType === "director" && accessCode !== DIRECTOR_CODE) {
-      els.authStatus.textContent = "Director access requires the correct director code.";
+    if (accountType === "director") {
+      clearDirectorSession();
+      setDirectorSession();
+      sessionStorage.setItem(ACCESS_ROLE_KEY, "director");
+      currentUser = {
+        uid: "director-local-session",
+        email: DIRECTOR_EMAIL,
+        displayName: "Samuel Takwirira"
+      };
+      currentUserProfile = {
+        uid: "director-local-session",
+        email: DIRECTOR_EMAIL,
+        firstName: "Samuel",
+        name: "Samuel Takwirira",
+        role: "director"
+      };
+      currentUserRole = "director";
+      logActivity("Login", "signed in as director", {
+        email: DIRECTOR_EMAIL,
+        name: "Samuel Takwirira",
+        role: "director"
+      });
+      els.authStatus.textContent = "Director access granted.";
+      els.authForm.reset();
+      syncAuthFields();
+      updateSessionUI();
+      closeAuthModal();
+      return;
+    }
+
+    if (accountType === "staff" && accessCode !== STAFF_CODE) {
+      els.authStatus.textContent = "Employee access requires the correct access code.";
       return;
     }
 
@@ -1068,6 +1121,7 @@ async function handleAuthSubmit(event) {
 
     els.authForm.reset();
     syncAuthFields();
+    updateSessionUI();
     closeAuthModal();
   } catch (error) {
     els.authStatus.textContent = getReadableAuthError(error);
@@ -1582,6 +1636,7 @@ function wireEvents() {
     setActiveTab("staff");
   });
   els.logoutBtn.addEventListener("click", async () => {
+    clearDirectorSession();
     logActivity("Logout", "signed out");
     sessionStorage.removeItem(ACCESS_ROLE_KEY);
     await signOut(auth);
@@ -1641,6 +1696,26 @@ async function loadParts() {
 }
 
 onAuthStateChanged(auth, async (user) => {
+  const directorSession = getDirectorSession();
+
+  if (directorSession && sessionStorage.getItem(ACCESS_ROLE_KEY) === "director") {
+    currentUser = {
+      uid: "director-local-session",
+      email: directorSession.email,
+      displayName: directorSession.name
+    };
+    currentUserProfile = {
+      uid: "director-local-session",
+      email: directorSession.email,
+      firstName: "Samuel",
+      name: directorSession.name,
+      role: "director"
+    };
+    currentUserRole = "director";
+    updateSessionUI();
+    return;
+  }
+
   currentUser = user;
 
   if (user) {

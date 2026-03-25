@@ -46,7 +46,7 @@ export const demoParts = [
     partId: "EAS-2001",
     name: "Engine Oil 5L 10W30 / 20W50",
     category: "Fluids",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 60,
     barcode: "EAS-ENGOIL-5L",
     description: "Universal engine oil for everyday servicing across the Eastern Auto Spares fleet."
@@ -55,7 +55,7 @@ export const demoParts = [
     partId: "EAS-2002",
     name: "Brake Fluid DOT3 / DOT4 500ml",
     category: "Brakes",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 40,
     barcode: "EAS-BRAKEFLUID-500",
     description: "Brake fluid for regular top-ups and service work across all supported models."
@@ -64,7 +64,7 @@ export const demoParts = [
     partId: "EAS-2003",
     name: "CV Grease Sachet 100g",
     category: "Suspension",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 50,
     barcode: "EAS-CVGREASE-100",
     description: "CV grease sachet for joint, boot, and axle service tasks."
@@ -73,7 +73,7 @@ export const demoParts = [
     partId: "EAS-2004",
     name: "Coolant 5L",
     category: "Cooling",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 30,
     barcode: "EAS-COOLANT-5L",
     description: "Cooling system refill coolant for passenger and light commercial vehicles."
@@ -82,7 +82,7 @@ export const demoParts = [
     partId: "EAS-2005",
     name: "Engine Cleaner 500ml Spray",
     category: "Engine",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 20,
     barcode: "EAS-ENGCLEAN-500",
     description: "Workshop-ready cleaner spray for engine bay maintenance."
@@ -91,7 +91,7 @@ export const demoParts = [
     partId: "EAS-2006",
     name: "Battery Water Distilled 1L",
     category: "Electrical",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 50,
     barcode: "EAS-BATWATER-1L",
     description: "Distilled battery water for routine electrical maintenance."
@@ -100,7 +100,7 @@ export const demoParts = [
     partId: "EAS-2007",
     name: "Blade Fuse Pack",
     category: "Electrical",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 30,
     barcode: "EAS-FUSE-BLADE",
     description: "Universal blade fuse packs for fast roadside and workshop replacements."
@@ -109,7 +109,7 @@ export const demoParts = [
     partId: "EAS-2008",
     name: "Tyre Valves Rubber",
     category: "Tyres",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 100,
     barcode: "EAS-TYREVALVE-RUB",
     description: "Rubber tyre valves suited to multiple passenger and light commercial wheels."
@@ -118,7 +118,7 @@ export const demoParts = [
     partId: "EAS-2009",
     name: "Battery Terminals Universal Clamps",
     category: "Electrical",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 20,
     barcode: "EAS-BATTERM-UNI",
     description: "Universal battery clamps for quick replacements and rewiring jobs."
@@ -127,7 +127,7 @@ export const demoParts = [
     partId: "EAS-2010",
     name: "Jumper Cables 400-600A",
     category: "Emergency",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 10,
     barcode: "EAS-JUMPER-600A",
     description: "Heavy-duty jumper cables for roadside recovery and workshop use."
@@ -136,7 +136,7 @@ export const demoParts = [
     partId: "EAS-2011",
     name: "2-Ton Hydraulic Jack",
     category: "Tools",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 5,
     barcode: "EAS-JACK-2TON",
     description: "2-ton hydraulic jack suitable for home garages and workshop bays."
@@ -424,7 +424,7 @@ export const demoParts = [
     partId: "EAS-2043",
     name: "ATF Fluid Dexron III 1L",
     category: "Fluids",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 25,
     barcode: "EAS-ATF-DEX3-1L",
     description: "ATF fluid for transmission service and top-up work."
@@ -433,7 +433,7 @@ export const demoParts = [
     partId: "EAS-2044",
     name: "CV Boot Kit",
     category: "Suspension",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 30,
     barcode: "EAS-CVBOOT-KIT",
     description: "CV boot kit with grease for axle service work."
@@ -442,7 +442,7 @@ export const demoParts = [
     partId: "EAS-2045",
     name: "Power Steering Fluid Dexron III 1L",
     category: "Fluids",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 15,
     barcode: "EAS-PSF-DEX3-1L",
     description: "Power steering fluid for workshop and retail service needs."
@@ -451,7 +451,7 @@ export const demoParts = [
     partId: "EAS-2046",
     name: "Lithium Grease 400g",
     category: "Tools",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 15,
     barcode: "EAS-GREASE-LITHIUM",
     description: "Lithium grease stock for wheel, bearing, and chassis lubrication."
@@ -460,7 +460,7 @@ export const demoParts = [
     partId: "EAS-2047",
     name: "Brake Cleaner Aerosol Spray",
     category: "Brakes",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 15,
     barcode: "EAS-BRAKECLEAN-AERO",
     description: "Brake cleaner spray for fast degreasing and workshop cleanup."
@@ -469,7 +469,7 @@ export const demoParts = [
     partId: "EAS-2048",
     name: "Cable Ties 200mm Pack",
     category: "Tools",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 20,
     barcode: "EAS-CABLETIE-200",
     description: "Cable tie packs for neat workshop routing and quick fixes."
@@ -478,7 +478,7 @@ export const demoParts = [
     partId: "EAS-2049",
     name: "Hose Clamp 10-40 mm",
     category: "Cooling",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 50,
     barcode: "EAS-HCLAMP-1040",
     description: "Hose clamps for cooling, fuel, and workshop plumbing repairs."
@@ -487,7 +487,7 @@ export const demoParts = [
     partId: "EAS-2050",
     name: "Screwdriver Set Flat / Phillips",
     category: "Tools",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 10,
     barcode: "EAS-SCREWDRIVER-SET",
     description: "Workshop screwdriver set for day-to-day service jobs."
@@ -496,7 +496,7 @@ export const demoParts = [
     partId: "EAS-2051",
     name: "Spanner Set 8-19mm Metric",
     category: "Tools",
-    vehicles: ["Universal", ...listedModels],
+    vehicles: ["Universal"],
     stockQty: 10,
     barcode: "EAS-SPANNER-SET",
     description: "Metric spanner set for general workshop maintenance."

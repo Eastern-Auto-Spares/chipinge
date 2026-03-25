@@ -145,11 +145,12 @@ const authErrorMessages = {
 
 function normalizeVehicles(value) {
   const entries = Array.isArray(value) ? value : String(value || "").split(",");
-  const vehicles = entries
+  const vehicles = [...new Set(entries
     .map((entry) => String(entry).trim())
-    .filter(Boolean);
+    .filter(Boolean))];
 
-  return vehicles.length ? [...new Set(vehicles)] : ["Universal"];
+  if (vehicles.includes("Universal")) return ["Universal"];
+  return vehicles.length ? vehicles : ["Universal"];
 }
 
 function normalizePrice(value) {
@@ -216,6 +217,7 @@ function formatPriceLabel(value) {
 
 function formatVehicleList(vehicles = []) {
   const visibleVehicles = vehicles.filter(Boolean);
+  if (visibleVehicles.includes("Universal")) return "Universal";
   if (!visibleVehicles.length) return "Universal";
   return visibleVehicles.join(", ");
 }

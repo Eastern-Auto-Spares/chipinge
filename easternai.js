@@ -31,7 +31,10 @@ function tokenize(value) {
 }
 
 function getVehicleNames(part) {
-  if (Array.isArray(part.vehicles) && part.vehicles.length) return part.vehicles;
+  if (Array.isArray(part.vehicles) && part.vehicles.length) {
+    if (part.vehicles.includes("Universal")) return ["Universal"];
+    return part.vehicles;
+  }
   return part.vehicle ? [part.vehicle] : [];
 }
 

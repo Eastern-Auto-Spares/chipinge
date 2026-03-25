@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
 import {
   getAuth,
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
@@ -101,6 +100,12 @@ const els = {
   authStateMini: document.getElementById("authStateMini"),
   staffPanelSection: document.getElementById("staffPanelSection"),
   directorPanel: document.getElementById("directorPanel"),
+  directorInventoryCount: document.getElementById("directorInventoryCount"),
+  directorPricedCount: document.getElementById("directorPricedCount"),
+  directorLowStockCount: document.getElementById("directorLowStockCount"),
+  directorPricePercent: document.getElementById("directorPricePercent"),
+  applyPriceUpdateBtn: document.getElementById("applyPriceUpdateBtn"),
+  directorInventoryBody: document.getElementById("directorInventoryBody"),
   directorActivityBody: document.getElementById("directorActivityBody"),
   addPartForm: document.getElementById("addPartForm"),
   addPartStatus: document.getElementById("addPartStatus"),
@@ -316,8 +321,7 @@ function getUserDisplayName() {
 
 function getAccountModeLabel(role = currentUserRole) {
   if (role === "director") return "Director";
-  if (role === "staff") return "Team";
-  if (role === "customer") return "Rewards";
+  if (role === "staff") return "Employee";
   return "Guest";
 }
 
@@ -437,7 +441,7 @@ function scrollToCheckout() {
 }
 
 function updateAuthPanelVisibility() {
-  const isSignedIn = !!currentUser;
+  const isSignedIn = !!currentUser && ["staff", "director"].includes(currentUserRole);
   els.authForm.classList.toggle("hidden", isSignedIn);
   els.signedInPanel.classList.toggle("hidden", !isSignedIn);
 }
@@ -472,23 +476,14 @@ function closeStockDeskModal() {
 
 function setAuthMode(mode) {
   authMode = mode;
-  const loginActive = mode === "login";
-
-  els.authModalTitle.textContent = loginActive ? "Login" : "Create Account";
-  els.authSubmitBtn.textContent = loginActive ? "Login" : "Join Rewards";
-  els.nameFieldWrap.classList.toggle("hidden", loginActive);
-
-  els.loginTabBtn.classList.toggle("active-tab", loginActive);
-  els.signupTabBtn.classList.toggle("active-tab", !loginActive);
-  els.loginTabBtn.classList.toggle("text-slate-600", !loginActive);
-  els.signupTabBtn.classList.toggle("text-slate-600", loginActive);
-  els.authAccountType.value = loginActive ? els.authAccountType.value : "customer";
-  els.authAccountType.disabled = !loginActive;
+  els.authModalTitle.textContent = "Secure Login";
+  els.authSubmitBtn.textContent = "Login";
+  if (els.nameFieldWrap) els.nameFieldWrap.classList.add("hidden");
   syncAuthFields();
 }
 
 function syncAuthFields() {
-  const needsAccessCode = authMode === "login" && ["staff", "director"].includes(els.authAccountType.value);
+  const needsAccessCode = ["staff", "director"].includes(els.authAccountType.value);
   els.staffCodeWrap.classList.toggle("hidden", !needsAccessCode);
 }
 
@@ -496,7 +491,7 @@ function setActiveTab(tabId) {
   if (tabId === "staff") {
     if (!currentUser) {
       openAuthModal();
-      els.authStatus.textContent = "Use Account for rewards, team access, or director tools.";
+      els.authStatus.textContent = "Use Staff Login with an employee or director account.";
       return;
     }
 
@@ -548,7 +543,7 @@ async function initializeAuthPersistence() {
   }
 }
 
-async function ensureUserDoc(user, name = "", role = "customer") {
+async function ensureUserDoc(user, name = "", role = "guest") {
   const userRef = doc(db, "users", user.uid);
   const snap = await getDoc(userRef);
   const payload = {
@@ -570,8 +565,9 @@ async function ensureUserDoc(user, name = "", role = "customer") {
 async function fetchUserRole(uid) {
   const userRef = doc(db, "users", uid);
   const snap = await getDoc(userRef);
-  if (!snap.exists()) return "customer";
-  return snap.data().role || "customer";
+  if (!snap.exists()) return "guest";
+  const role = snap.data().role || "guest";
+  return ["staff", "director"].includes(role) ? role : "guest";
 }
 
 async function fetchUserProfile(uid) {
@@ -871,15 +867,15 @@ function buildLocalEasternAIReply(message) {
   const lower = query.toLowerCase();
 
   if (lower.includes("director")) {
-    return "Director access opens the Account control room. From there you can review employee activity, authorize pay, add stock, and delete inventory lines.";
+    return "Director access opens the Staff control room. From there you can review employee activity, authorize pay, add stock, and delete inventory lines.";
   }
 
   if (lower.includes("delete")) {
-    return "A director can remove an item from the Account stock table by using the Delete action on that inventory row.";
+    return "A director can remove an item from the Staff control room by using the Remove action on that inventory row.";
   }
 
   if (lower.includes("barcode")) {
-    return "Use the stock desk barcode field in Account. A scanner can type straight into that input, then the new stock line becomes searchable on the site.";
+    return "Use the stock desk barcode field in Staff. A scanner can type straight into that input, then the new stock line becomes searchable on the site.";
   }
 
   if (!topMatches.length) {
@@ -960,9 +956,7 @@ async function handleAuthSubmit(event) {
   event.preventDefault();
   const email = els.authEmail.value.trim();
   const password = els.authPassword.value.trim();
-  const name = els.authName.value.trim();
   const accountType = els.authAccountType.value;
-  const isPrivilegedLogin = authMode === "login" && ["staff", "director"].includes(accountType);
   const accessCode = els.staffCodeInput.value.trim();
 
   if (!email || !password) {
@@ -974,43 +968,29 @@ async function handleAuthSubmit(event) {
   els.authSubmitBtn.classList.add("opacity-60", "cursor-not-allowed");
 
   try {
-    if (authMode === "signup") {
-      if (!name) {
-        els.authStatus.textContent = "Full name is required for sign up.";
-        return;
-      }
-
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      await ensureUserDoc(result.user, name, "customer");
-      sessionStorage.setItem(ACCESS_ROLE_KEY, "customer");
-      els.authStatus.textContent = "Account created successfully. You are now signed in.";
-    } else {
-      if (accountType === "staff" && accessCode !== STAFF_CODE) {
-        els.authStatus.textContent = "Team access requires the correct access code.";
-        return;
-      }
-
-      if (accountType === "director" && accessCode !== DIRECTOR_CODE) {
-        els.authStatus.textContent = "Director access requires the correct director code.";
-        return;
-      }
-
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      const signedInRole = isPrivilegedLogin ? accountType : "customer";
-      await ensureUserDoc(result.user, "", signedInRole);
-      sessionStorage.setItem(ACCESS_ROLE_KEY, signedInRole);
-      logActivity("Login", `signed in as ${signedInRole}`, {
-        email: result.user.email || email,
-        name: result.user.displayName || name || getFirstName(result.user.email || email),
-        role: signedInRole
-      });
-      els.authStatus.textContent =
-        signedInRole === "director"
-          ? "Director login successful."
-          : signedInRole === "staff"
-            ? "Team login successful."
-            : "Logged in successfully.";
+    if (accountType === "staff" && accessCode !== STAFF_CODE) {
+      els.authStatus.textContent = "Employee access requires the correct access code.";
+      return;
     }
+
+    if (accountType === "director" && accessCode !== DIRECTOR_CODE) {
+      els.authStatus.textContent = "Director access requires the correct director code.";
+      return;
+    }
+
+    const result = await signInWithEmailAndPassword(auth, email, password);
+    const signedInRole = accountType;
+    await ensureUserDoc(result.user, "", signedInRole);
+    sessionStorage.setItem(ACCESS_ROLE_KEY, signedInRole);
+    logActivity("Login", `signed in as ${signedInRole}`, {
+      email: result.user.email || email,
+      name: result.user.displayName || getFirstName(result.user.email || email),
+      role: signedInRole
+    });
+    els.authStatus.textContent =
+      signedInRole === "director"
+        ? "Director login successful."
+        : "Employee login successful.";
 
     els.authForm.reset();
     syncAuthFields();
@@ -1114,6 +1094,118 @@ async function createPartWithAutoId(data) {
   return createdPart;
 }
 
+async function persistPartUpdate(part) {
+  const normalizedPart = normalizePart(part);
+
+  try {
+    if (normalizedPart.id) {
+      await setDoc(doc(db, "parts", normalizedPart.id), {
+        ...normalizedPart,
+        createdAt: normalizedPart.createdAt instanceof Date ? normalizedPart.createdAt : serverTimestamp()
+      }, { merge: true });
+    } else {
+      saveLocalPart(normalizedPart);
+    }
+  } catch (error) {
+    saveLocalPart(normalizedPart);
+  }
+
+  return normalizedPart;
+}
+
+function renderDirectorInventoryDashboard() {
+  if (currentUserRole !== "director") {
+    if (els.directorInventoryBody) els.directorInventoryBody.innerHTML = "";
+    return;
+  }
+
+  const visiblePrices = parts.filter((part) => Number(part.price) > 0).length;
+  const lowStockCount = parts.filter((part) => ["Low Stock", "Order Ready", "Out of Stock"].includes(part.stock)).length;
+
+  els.directorInventoryCount.textContent = parts.length;
+  els.directorPricedCount.textContent = visiblePrices;
+  els.directorLowStockCount.textContent = lowStockCount;
+
+  els.directorInventoryBody.innerHTML = parts
+    .map((part) => `
+      <div class="grid gap-3 px-4 py-4 text-sm lg:grid-cols-[1.2fr_0.75fr_0.9fr_110px_140px_150px] lg:items-center lg:px-5">
+        <div class="min-w-0">
+          <div class="font-semibold text-white">${part.name}</div>
+          <div class="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">${part.partId} • ${part.barcode || "No barcode"}</div>
+        </div>
+        <div class="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-200">${part.category}</div>
+        <div class="text-sm text-slate-300">${formatVehicleList(part.vehicles)}</div>
+        <div>
+          <input data-director-price="${part.partId}" type="number" min="0" step="0.01" value="${part.price ?? ""}" class="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-white outline-none" placeholder="--" />
+        </div>
+        <div class="text-sm text-slate-300">${part.stockQty || 0} units</div>
+        <div class="flex flex-wrap gap-2">
+          <button data-save-price="${part.partId}" class="rounded-2xl bg-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white hover:bg-white/15">Save Price</button>
+          <button data-delete-director="${part.partId}" class="rounded-2xl border border-rose-300/40 bg-rose-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-rose-200 hover:bg-rose-500/20">Remove</button>
+        </div>
+      </div>
+    `)
+    .join("");
+
+  els.directorInventoryBody.querySelectorAll("[data-save-price]").forEach((button) => {
+    button.addEventListener("click", () => handleDirectorPriceSave(button.dataset.savePrice));
+  });
+
+  els.directorInventoryBody.querySelectorAll("[data-delete-director]").forEach((button) => {
+    button.addEventListener("click", () => handleDeletePart(button.dataset.deleteDirector));
+  });
+}
+
+async function handleDirectorPriceSave(partId) {
+  if (currentUserRole !== "director") return;
+  const part = parts.find((entry) => entry.partId === partId);
+  const input = els.directorInventoryBody.querySelector(`[data-director-price="${partId}"]`);
+  if (!part || !input) return;
+
+  const updatedPart = await persistPartUpdate({
+    ...part,
+    price: normalizePrice(input.value),
+    stock: part.stock || inferStockState(part.stockQty)
+  });
+
+  parts = mergeParts(parts.filter((entry) => entry.partId !== partId), [updatedPart]);
+  logActivity("Pricing", `updated ${updatedPart.name} to ${formatPriceLabel(updatedPart.price)}`);
+  renderStockTable();
+  renderDirectorInventoryDashboard();
+  refreshHeroPrices();
+  performSearch({ preserveExistingTerm: true });
+}
+
+async function applyDirectorPriceIncrease() {
+  if (currentUserRole !== "director") return;
+
+  const percent = Number(els.directorPricePercent.value);
+  if (!Number.isFinite(percent) || percent <= 0) {
+    els.addPartStatus.textContent = "Enter a valid percentage above 0 to increase prices.";
+    return;
+  }
+
+  const multiplier = 1 + percent / 100;
+  const updatedParts = [];
+
+  for (const part of parts) {
+    if (!Number(part.price)) continue;
+    const updatedPart = await persistPartUpdate({
+      ...part,
+      price: Number((part.price * multiplier).toFixed(2))
+    });
+    updatedParts.push(updatedPart);
+  }
+
+  parts = mergeParts(parts.filter((part) => !updatedParts.some((updated) => updated.partId === part.partId)), updatedParts);
+  els.addPartStatus.textContent = `Director pricing update applied: +${percent}% to ${updatedParts.length} products.`;
+  logActivity("Pricing", `increased visible prices by ${percent}%`);
+  renderStockTable();
+  renderDirectorInventoryDashboard();
+  refreshHeroPrices();
+  performSearch({ preserveExistingTerm: true });
+}
+
 function createDeskPartFromForm() {
   const vehicles = normalizeVehicles(getSelectedVehicleOptions());
   const stockQty = Number(els.partQty.value);
@@ -1166,6 +1258,7 @@ async function handleAddPart(event) {
   hydrateCategoryFilter();
   hydrateVehicleFilter();
   renderStockTable();
+  renderDirectorInventoryDashboard();
   refreshHeroPrices();
   performSearch({ preserveExistingTerm: true });
   closeStockDeskModal();
@@ -1194,43 +1287,40 @@ async function handleAIChatSubmit(event) {
 }
 
 function updateSessionUI() {
-  const isSignedIn = !!currentUser;
+  const isSignedIn = !!currentUser && ["staff", "director"].includes(currentUserRole);
   const isStaff = currentUserRole === "staff";
   const isDirector = currentUserRole === "director";
   const hasBackOfficeAccess = isStaff || isDirector;
   const profileName = getUserDisplayName();
   const fullName = currentUserProfile?.name || currentUser?.displayName || profileName;
 
-  els.openAuthBtn.textContent = "Account";
+  els.openAuthBtn.textContent = isSignedIn ? "Staff Desk" : "Staff Login";
   els.authStateMini.classList.toggle("hidden", !isSignedIn);
   els.authStateMini.innerHTML = isSignedIn
     ? `<span class="font-display text-sm font-bold text-white">${profileName}</span><span class="mx-1 text-slate-500">•</span><span>${shortenEmail(currentUser.email)}</span>`
     : "";
-  els.signupTabBtn.classList.toggle("hidden", isSignedIn);
-  els.signedInRoleText.textContent = isDirector ? "Director Control" : isStaff ? "Team Access" : "Rewards Active";
+  if (els.signupTabBtn) els.signupTabBtn.classList.add("hidden");
+  els.signedInRoleText.textContent = isDirector ? "Director Control" : isStaff ? "Employee Access" : "Staff Login";
   els.signedInNameText.textContent = fullName;
   els.signedInEmailText.textContent = currentUser?.email || "";
   els.openBackOfficeBtn.classList.toggle("hidden", !hasBackOfficeAccess);
+  els.openBackOfficeBtn.textContent = isDirector ? "Open Director Control Room" : "Open Staff Desk";
   els.cartNavBtn.classList.toggle("hidden", isDirector);
   els.cartTabBtn?.classList.toggle("hidden", isDirector);
 
   if (!isSignedIn) {
     els.sessionTitle.textContent = "Guest Browsing";
     els.sessionText.textContent = "Browse parts on your phone, search with EasternAI, and place orders fast when a car breaks down.";
-    els.orderStatus.textContent = "Sign in to attach your account to orders. Guests can still prepare carts.";
+    els.orderStatus.textContent = "Guests can place orders directly. Staff sign-in is only for internal operations.";
   } else if (isDirector) {
     els.sessionTitle.textContent = "Director Session";
-    els.sessionText.textContent = "Director controls are active. Review employee activity, authorize pay, and oversee stock operations.";
-    els.orderStatus.textContent = "Director account linked. Oversight tools are available in Account.";
+    els.sessionText.textContent = "Director controls are active. Review employee activity, manage products, and update public pricing from the staff desk.";
+    els.orderStatus.textContent = "Director account linked. Ordering is disabled in this session.";
     if (activeAppTab === "cart") setActiveTab("staff");
   } else if (isStaff) {
-    els.sessionTitle.textContent = "Team Session";
-    els.sessionText.textContent = "Desktop stock tools are unlocked. Review inventory, scan barcodes, and keep the customer storefront current.";
-    els.orderStatus.textContent = "Team account linked. Orders will include your signed-in identity.";
-  } else {
-    els.sessionTitle.textContent = "Customer Session";
-    els.sessionText.textContent = "Your account is active. You can now place orders with your signed-in identity.";
-    els.orderStatus.textContent = "Signed in successfully. Your orders will be linked to your account.";
+    els.sessionTitle.textContent = "Employee Session";
+    els.sessionText.textContent = "Employee tools are unlocked. Review inventory, scan stock, and keep the customer storefront current.";
+    els.orderStatus.textContent = "Employee account linked for internal operations.";
   }
 
   els.roleBadge.classList.toggle("hidden", !hasBackOfficeAccess);
@@ -1239,10 +1329,11 @@ function updateSessionUI() {
   els.directorPanel.classList.toggle("hidden", !isDirector);
   els.signedInUserText.textContent = isSignedIn
     ? isDirector
-      ? "Behind-the-scenes control is active. Use the control room for inventory, team activity, and payroll authorization."
-      : `${getAccountModeLabel()} account ready.`
+      ? "Behind-the-scenes control is active. Use the control room for inventory, pricing, and team oversight."
+      : "Employee tools are ready."
     : "";
   renderDirectorActivity();
+  renderDirectorInventoryDashboard();
   updateAuthPanelVisibility();
   renderStockTable();
 }
@@ -1305,8 +1396,10 @@ async function handleDeletePart(partKey) {
 
   storeDeletedPartKey(target);
   parts = parts.filter((part) => getPartKey(part) !== getPartKey(target));
+  els.addPartStatus.textContent = `${target.name} was removed from inventory.`;
   logActivity("Inventory", `deleted ${target.name} (${target.partId})`);
   renderStockTable();
+  renderDirectorInventoryDashboard();
   hydrateCategoryFilter();
   hydrateVehicleFilter();
   performSearch({ preserveExistingTerm: true });
@@ -1402,11 +1495,10 @@ function wireEvents() {
   els.closeAuthBtn.addEventListener("click", closeAuthModal);
   els.openReviewsBtn.addEventListener("click", openReviewsModal);
   els.closeReviewsBtn.addEventListener("click", closeReviewsModal);
-  els.loginTabBtn.addEventListener("click", () => setAuthMode("login"));
-  els.signupTabBtn.addEventListener("click", () => setAuthMode("signup"));
   els.authAccountType.addEventListener("change", syncAuthFields);
   els.authForm.addEventListener("submit", handleAuthSubmit);
   els.aiChatForm.addEventListener("submit", handleAIChatSubmit);
+  els.applyPriceUpdateBtn?.addEventListener("click", applyDirectorPriceIncrease);
   els.toggleSignedInDetailsBtn.addEventListener("click", () => {
     els.signedInEmailWrap.classList.toggle("hidden");
   });
@@ -1468,6 +1560,7 @@ async function loadParts() {
   hydrateCategoryFilter();
   hydrateVehicleFilter();
   renderStockTable();
+  renderDirectorInventoryDashboard();
   refreshHeroPrices();
   performSearch({ preserveExistingTerm: true });
 }
@@ -1481,7 +1574,7 @@ onAuthStateChanged(auth, async (user) => {
     currentUserRole = await fetchUserRole(user.uid);
     const privilegedSession = sessionStorage.getItem(ACCESS_ROLE_KEY);
     if (["staff", "director"].includes(currentUserRole) && privilegedSession !== currentUserRole) {
-      currentUserRole = "customer";
+      currentUserRole = "guest";
     }
   } else {
     currentUserProfile = null;
@@ -1497,7 +1590,7 @@ setAuthMode("login");
 setActiveTab("shop");
 pushAIChatMessage(
   "assistant",
-  "EasternAI is online in guided mode. Ask about parts, compatible vehicles, barcode workflows, customer rewards, or team stock operations."
+  "EasternAI is online in guided mode. Ask about parts, compatible vehicles, barcode workflows, guest ordering, or staff stock operations."
 );
 renderCart();
 loadParts();

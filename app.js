@@ -63,6 +63,9 @@ const els = {
   customerLocation: document.getElementById("customerLocation"),
   customerNotes: document.getElementById("customerNotes"),
   openAuthBtn: document.getElementById("openAuthBtn"),
+  appTabBtns: document.querySelectorAll("[data-app-tab]"),
+  jumpTabBtns: document.querySelectorAll("[data-jump-tab]"),
+  appPanels: document.querySelectorAll("[data-app-panel]"),
   closeAuthBtn: document.getElementById("closeAuthBtn"),
   authModal: document.getElementById("authModal"),
   authForm: document.getElementById("authForm"),
@@ -71,9 +74,12 @@ const els = {
   authSubmitBtn: document.getElementById("authSubmitBtn"),
   loginTabBtn: document.getElementById("loginTabBtn"),
   signupTabBtn: document.getElementById("signupTabBtn"),
+  authAccountType: document.getElementById("authAccountType"),
   authName: document.getElementById("authName"),
   authEmail: document.getElementById("authEmail"),
   authPassword: document.getElementById("authPassword"),
+  staffCodeWrap: document.getElementById("staffCodeWrap"),
+  staffCodeInput: document.getElementById("staffCodeInput"),
   nameFieldWrap: document.getElementById("nameFieldWrap"),
   signedInPanel: document.getElementById("signedInPanel"),
   signedInUserText: document.getElementById("signedInUserText"),
@@ -116,8 +122,11 @@ let currentUserRole = "guest";
 let parts = [];
 let cart = JSON.parse(localStorage.getItem("eas-cart") || "[]");
 let activeSearchTerm = "";
+let activeAppTab = "shop";
 
 const LOCAL_PARTS_KEY = "eas-local-parts";
+const STAFF_CODE = "AES26";
+const STAFF_SESSION_KEY = "eas-staff-session";
 
 const authErrorMessages = {
   "auth/configuration-not-found": "Secure account setup is not finished yet. Please complete the sign-in configuration in the admin console.",
@@ -211,6 +220,24 @@ function formatVehicleList(vehicles = []) {
   return visibleVehicles.join(", ");
 }
 
+function getFirstName(value) {
+  return String(value || "").trim().split(/\s+/).filter(Boolean)[0] || "Account";
+}
+
+function shortenEmail(email) {
+  const value = String(email || "").trim();
+  if (value.length <= 24) return value;
+  const [local, domain] = value.split("@");
+  if (!domain) return `${value.slice(0, 21)}...`;
+  return `${local.slice(0, 10)}...@${domain}`;
+}
+
+function getStockSignal(stock) {
+  if (stock === "In Stock") return { dot: "bg-emerald-500", label: "Available", text: "text-emerald-600" };
+  if (stock === "Low Stock" || stock === "Order Ready") return { dot: "bg-amber-400", label: "Low Stock", text: "text-amber-600" };
+  return { dot: "bg-rose-500", label: "Out of Stock", text: "text-rose-600" };
+}
+
 function persistCart() {
   localStorage.setItem("eas-cart", JSON.stringify(cart));
 }
@@ -258,13 +285,45 @@ function setAuthMode(mode) {
   const loginActive = mode === "login";
 
   els.authModalTitle.textContent = loginActive ? "Login" : "Create Account";
-  els.authSubmitBtn.textContent = loginActive ? "Login" : "Create Account";
+  els.authSubmitBtn.textContent = loginActive ? "Login" : "Join Rewards";
   els.nameFieldWrap.classList.toggle("hidden", loginActive);
 
   els.loginTabBtn.classList.toggle("active-tab", loginActive);
   els.signupTabBtn.classList.toggle("active-tab", !loginActive);
   els.loginTabBtn.classList.toggle("text-slate-600", !loginActive);
   els.signupTabBtn.classList.toggle("text-slate-600", loginActive);
+  els.authAccountType.value = loginActive ? els.authAccountType.value : "customer";
+  els.authAccountType.disabled = !loginActive;
+  syncAuthFields();
+}
+
+function syncAuthFields() {
+  const isStaffLogin = authMode === "login" && els.authAccountType.value === "staff";
+  els.staffCodeWrap.classList.toggle("hidden", !isStaffLogin);
+}
+
+function setActiveTab(tabId) {
+  if (tabId === "staff" && currentUserRole !== "staff") {
+    openAuthModal();
+    els.authStatus.textContent = "Staff access needs a staff login and the current staff code.";
+    return;
+  }
+
+  activeAppTab = tabId;
+
+  els.appTabBtns.forEach((button) => {
+    const active = button.dataset.appTab === tabId;
+    button.classList.toggle("app-tab-active", active);
+    button.classList.toggle("border", !active);
+    button.classList.toggle("border-white/10", !active);
+    button.classList.toggle("bg-white/5", !active);
+    button.classList.toggle("text-slate-300", !active);
+    button.classList.toggle("text-slate-200", active);
+  });
+
+  els.appPanels.forEach((panel) => {
+    panel.classList.toggle("hidden", panel.dataset.appPanel !== tabId);
+  });
 }
 
 function getReadableAuthError(error) {
@@ -280,18 +339,22 @@ async function initializeAuthPersistence() {
   }
 }
 
-async function ensureUserDoc(user, name = "") {
+async function ensureUserDoc(user, name = "", role = "customer") {
   const userRef = doc(db, "users", user.uid);
   const snap = await getDoc(userRef);
+  const payload = {
+    uid: user.uid,
+    name: name || user.displayName || snap.data()?.name || "",
+    firstName: getFirstName(name || user.displayName || snap.data()?.name || user.email || ""),
+    email: user.email || "",
+    role,
+    createdAt: snap.exists() ? snap.data().createdAt || serverTimestamp() : serverTimestamp()
+  };
 
   if (!snap.exists()) {
-    await setDoc(userRef, {
-      uid: user.uid,
-      name: name || user.displayName || "",
-      email: user.email || "",
-      role: "customer",
-      createdAt: serverTimestamp()
-    });
+    await setDoc(userRef, payload);
+  } else if (role === "staff" || name) {
+    await setDoc(userRef, payload, { merge: true });
   }
 }
 
@@ -391,67 +454,68 @@ function renderProducts(searchResult) {
 
   els.productsGrid.innerHTML = filtered
     .map(
-      (part) => `
-        <article class="card-hover overflow-hidden rounded-[26px] bg-white shadow-md">
-          <div class="flex h-40 items-center justify-center bg-gradient-to-br ${getCategoryGradient(part.category)}">
+      (part) => {
+        const stockSignal = getStockSignal(part.stock);
+        return `
+        <article class="card-hover grid gap-3 px-4 py-4 sm:px-5 lg:grid-cols-[1.35fr_0.9fr_1.2fr_110px_110px_120px] lg:items-center">
+          <div class="min-w-0">
+            <div class="flex items-start gap-3">
+              <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${getCategoryGradient(part.category)} text-white shadow-sm">
+                ${
+                  part.imageUrl
+                    ? `<img src="${part.imageUrl}" alt="${part.name}" class="h-12 w-12 rounded-2xl object-cover" />`
+                    : `<i class="fa-solid fa-gear text-lg opacity-90"></i>`
+                }
+              </div>
+              <div class="min-w-0">
+                <h3 class="truncate text-base font-semibold text-slate-900 sm:text-lg">${part.name || "Unnamed Part"}</h3>
+                <p class="mt-1 text-[11px] uppercase tracking-[0.18em] text-slate-400 sm:text-xs">${part.partId || "Auto ID"} • ${part.barcode || "No barcode"}</p>
+                <p class="mt-2 text-sm leading-6 text-slate-500">${part.description || "Quality spare part available for ordering and workshop use."}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-2 lg:block">
+            <span class="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-700 sm:text-[11px]">${part.category || "General"}</span>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            ${part.vehicles
+              .slice(0, 3)
+              .map(
+                (vehicle) => `
+                  <span class="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-orange-600 sm:text-[11px]">${vehicle}</span>
+                `
+              )
+              .join("")}
             ${
-              part.imageUrl
-                ? `<img src="${part.imageUrl}" alt="${part.name}" class="h-full w-full object-cover" />`
-                : `<div class="text-center text-white">
-                    <i class="fa-solid fa-gear text-4xl opacity-90"></i>
-                    <div class="mt-2 text-[10px] uppercase tracking-[0.25em] opacity-80">${part.category || "Part"}</div>
-                  </div>`
+              part.vehicles.length > 3
+                ? `<span class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 sm:text-[11px]">+${part.vehicles.length - 3} more</span>`
+                : ""
             }
           </div>
 
-          <div class="p-4 sm:p-5">
-            <div class="flex flex-wrap gap-2">
-              <span class="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-700 sm:text-[11px]">${part.category || "General"}</span>
-              <span class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600 sm:text-[11px]">${part.stock || "In Stock"}</span>
-            </div>
-
-            <div class="mt-3 flex items-start justify-between gap-3">
-              <div>
-                <h3 class="text-base font-semibold text-slate-900 sm:text-lg">${part.name || "Unnamed Part"}</h3>
-                <p class="mt-1 text-[11px] uppercase tracking-[0.18em] text-slate-400 sm:text-xs">${part.partId || "Auto ID"} • ${part.barcode || "No barcode"}</p>
-              </div>
-              <div class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600 sm:text-[11px]">
-                ${part.stockQty || 0} units
-              </div>
-            </div>
-
-            <p class="mt-3 text-sm leading-6 text-slate-500">
-              ${part.description || "Quality spare part available for ordering and workshop use."}
-            </p>
-
-            <div class="mt-3 flex flex-wrap gap-2">
-              ${part.vehicles
-                .slice(0, 4)
-                .map(
-                  (vehicle) => `
-                    <span class="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-orange-600 sm:text-[11px]">${vehicle}</span>
-                  `
-                )
-                .join("")}
-              ${
-                part.vehicles.length > 4
-                  ? `<span class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 sm:text-[11px]">+${part.vehicles.length - 4} more</span>`
-                  : ""
-              }
-            </div>
-
-            <div class="mt-5 flex items-end justify-between gap-4">
-              <div>
-                <div class="text-[10px] uppercase tracking-[0.16em] text-slate-400 sm:text-[11px]">Price</div>
-                <div class="font-display text-xl font-bold text-slate-900 sm:text-2xl">${formatPriceLabel(part.price)}</div>
-              </div>
-              <button data-add-cart="${part.partId}" class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600">
-                Add
-              </button>
+          <div>
+            <div class="text-[10px] uppercase tracking-[0.16em] text-slate-400 lg:hidden">Stock</div>
+            <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] sm:text-[11px] ${stockSignal.text}">
+              <span class="stock-dot ${stockSignal.dot}"></span>
+              ${stockSignal.label}
             </div>
           </div>
+
+          <div>
+            <div class="text-[10px] uppercase tracking-[0.16em] text-slate-400 lg:hidden">Price</div>
+            <div class="font-display text-xl font-bold text-slate-900">${formatPriceLabel(part.price)}</div>
+          </div>
+
+          <div class="flex justify-start lg:justify-end">
+            <button data-add-cart="${part.partId}" class="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600">
+              Add
+            </button>
+          </div>
         </article>
-      `
+      `;
+      }
     )
     .join("");
 
@@ -599,6 +663,9 @@ async function handleAuthSubmit(event) {
   const email = els.authEmail.value.trim();
   const password = els.authPassword.value.trim();
   const name = els.authName.value.trim();
+  const accountType = els.authAccountType.value;
+  const isStaffLogin = authMode === "login" && accountType === "staff";
+  const staffCode = els.staffCodeInput.value.trim();
 
   if (!email || !password) {
     els.authStatus.textContent = "Email and password are required.";
@@ -616,14 +683,27 @@ async function handleAuthSubmit(event) {
       }
 
       const result = await createUserWithEmailAndPassword(auth, email, password);
-      await ensureUserDoc(result.user, name);
+      await ensureUserDoc(result.user, name, "customer");
+      sessionStorage.removeItem(STAFF_SESSION_KEY);
       els.authStatus.textContent = "Account created successfully. You are now signed in.";
     } else {
-      await signInWithEmailAndPassword(auth, email, password);
-      els.authStatus.textContent = "Logged in successfully.";
+      if (isStaffLogin && staffCode !== STAFF_CODE) {
+        els.authStatus.textContent = "Staff access requires the correct staff code.";
+        return;
+      }
+
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      await ensureUserDoc(result.user, "", isStaffLogin ? "staff" : "customer");
+      if (isStaffLogin) {
+        sessionStorage.setItem(STAFF_SESSION_KEY, "true");
+      } else {
+        sessionStorage.removeItem(STAFF_SESSION_KEY);
+      }
+      els.authStatus.textContent = isStaffLogin ? "Staff login successful." : "Logged in successfully.";
     }
 
     els.authForm.reset();
+    syncAuthFields();
     closeAuthModal();
   } catch (error) {
     els.authStatus.textContent = getReadableAuthError(error);
@@ -788,10 +868,12 @@ async function handleAddPart(event) {
 function updateSessionUI() {
   const isSignedIn = !!currentUser;
   const isStaff = currentUserRole === "staff";
+  const profileName = getFirstName(currentUser?.displayName || currentUser?.email || "Account");
 
-  els.openAuthBtn.textContent = isSignedIn ? "Account" : "Login";
+  els.openAuthBtn.textContent = isSignedIn ? "Account" : "Staff / Rewards";
   els.authStateMini.classList.toggle("hidden", !isSignedIn);
-  els.authStateMini.textContent = isSignedIn ? `${currentUser.email}` : "";
+  els.authStateMini.textContent = isSignedIn ? `${profileName} • ${shortenEmail(currentUser.email)}` : "";
+  els.signupTabBtn.classList.toggle("hidden", isSignedIn);
 
   if (!isSignedIn) {
     els.sessionTitle.textContent = "Guest Browsing";
@@ -809,7 +891,7 @@ function updateSessionUI() {
 
   els.roleBadge.classList.toggle("hidden", !isStaff);
   els.staffPanelSection.classList.toggle("hidden", !isStaff);
-  els.signedInUserText.textContent = isSignedIn ? `${currentUser.email} • ${currentUserRole}` : "";
+  els.signedInUserText.textContent = isSignedIn ? `${profileName} • ${shortenEmail(currentUser.email)} • ${currentUserRole}` : "";
   updateAuthPanelVisibility();
 }
 
@@ -835,8 +917,10 @@ function wireEvents() {
   els.closeAuthBtn.addEventListener("click", closeAuthModal);
   els.loginTabBtn.addEventListener("click", () => setAuthMode("login"));
   els.signupTabBtn.addEventListener("click", () => setAuthMode("signup"));
+  els.authAccountType.addEventListener("change", syncAuthFields);
   els.authForm.addEventListener("submit", handleAuthSubmit);
   els.logoutBtn.addEventListener("click", async () => {
+    sessionStorage.removeItem(STAFF_SESSION_KEY);
     await signOut(auth);
     closeAuthModal();
   });
@@ -847,7 +931,18 @@ function wireEvents() {
     if (event.target === els.stockDeskModal) closeStockDeskModal();
   });
 
-  els.cartNavBtn.addEventListener("click", scrollToCheckout);
+  els.appTabBtns.forEach((button) => {
+    button.addEventListener("click", () => setActiveTab(button.dataset.appTab));
+  });
+
+  els.jumpTabBtns.forEach((button) => {
+    button.addEventListener("click", () => setActiveTab(button.dataset.jumpTab));
+  });
+
+  els.cartNavBtn.addEventListener("click", () => {
+    setActiveTab("cart");
+    scrollToCheckout();
+  });
   els.authModal.addEventListener("click", (event) => {
     if (event.target === els.authModal) closeAuthModal();
   });
@@ -883,6 +978,9 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     await ensureUserDoc(user);
     currentUserRole = await fetchUserRole(user.uid);
+    if (currentUserRole === "staff" && sessionStorage.getItem(STAFF_SESSION_KEY) !== "true") {
+      currentUserRole = "customer";
+    }
   } else {
     currentUserRole = "guest";
   }
@@ -893,5 +991,6 @@ onAuthStateChanged(auth, async (user) => {
 initializeAuthPersistence();
 wireEvents();
 setAuthMode("login");
+setActiveTab("shop");
 renderCart();
 loadParts();
